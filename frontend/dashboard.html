@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Tracker - Dashboard</title>
+    <title>Dashboard - MovieTrack</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <h1>🎬 Movie Tracker</h1>
+                <h1><i class="fas fa-film"></i> MOVIETRACK</h1>
             </div>
             <ul class="nav-menu">
-                <li><a href="dashboard.html" class="active">Dashboard</a></li>
-                <li><a href="#" id="logoutBtn">Logout</a></li>
+                <li><a href="dashboard.html" class="active"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -24,35 +25,35 @@
     <section class="dashboard">
         <div class="container">
             <div class="dashboard-header">
-                <h2>My Dashboard</h2>
-                <p>Welcome back, <span id="userName">User</span>!</p>
+                <h2><i class="fas fa-th-large"></i> My Dashboard</h2>
+                <p>Welcome back, <strong id="userName">User</strong>! 🎬</p>
             </div>
 
             <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon">🎬</div>
+                    <div class="stat-icon"><i class="fas fa-film"></i></div>
                     <div class="stat-content">
                         <h3 id="totalMovies">0</h3>
                         <p>Total Movies</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">✅</div>
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                     <div class="stat-content">
                         <h3 id="watchedMovies">0</h3>
                         <p>Watched</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">⏰</div>
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
                     <div class="stat-content">
                         <h3 id="watchlistMovies">0</h3>
                         <p>Watchlist</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">⭐</div>
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
                     <div class="stat-content">
                         <h3 id="avgRating">0</h3>
                         <p>Avg Rating</p>
@@ -62,7 +63,7 @@
 
             <!-- Add Movie Section -->
             <div class="add-movie-section">
-                <h3>Add New Movie</h3>
+                <h3><i class="fas fa-plus-circle"></i> Add New Movie</h3>
                 <form id="addMovieForm" class="movie-form">
                     <div class="form-row">
                         <div class="form-group">
@@ -88,14 +89,16 @@
                                 <option value="1">⭐</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary">Add Movie</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Movie
+                        </button>
                     </div>
                 </form>
             </div>
 
             <!-- Filter Section -->
             <div class="filter-section">
-                <h3>My Movies</h3>
+                <h3><i class="fas fa-video"></i> My Movies</h3>
                 <div class="filter-buttons">
                     <button class="filter-btn active" data-filter="all">All</button>
                     <button class="filter-btn" data-filter="watched">Watched</button>
