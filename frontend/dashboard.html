@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Tracker - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>🎬 Movie Tracker</h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <section class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h2>My Dashboard</h2>
+                <p>Welcome back, <span id="userName">User</span>!</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🎬</div>
+                    <div class="stat-content">
+                        <h3 id="totalMovies">0</h3>
+                        <p>Total Movies</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <h3 id="watchedMovies">0</h3>
+                        <p>Watched</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-content">
+                        <h3 id="watchlistMovies">0</h3>
+                        <p>Watchlist</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-content">
+                        <h3 id="avgRating">0</h3>
+                        <p>Avg Rating</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Movie Section -->
+            <div class="add-movie-section">
+                <h3>Add New Movie</h3>
+                <form id="addMovieForm" class="movie-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" id="movieTitle" placeholder="Movie Title" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="movieYear" placeholder="Year" min="1900" max="2025">
+                        </div>
+                        <div class="form-group">
+                            <select id="movieStatus" required>
+                                <option value="">Select Status</option>
+                                <option value="watched">Watched</option>
+                                <option value="watchlist">Watchlist</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <select id="movieRating">
+                                <option value="">Rating</option>
+                                <option value="5">⭐⭐⭐⭐⭐</option>
+                                <option value="4">⭐⭐⭐⭐</option>
+                                <option value="3">⭐⭐⭐</option>
+                                <option value="2">⭐⭐</option>
+                                <option value="1">⭐</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Movie</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h3>My Movies</h3>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="watched">Watched</button>
+                    <button class="filter-btn" data-filter="watchlist">Watchlist</button>
+                </div>
+            </div>
+
+            <!-- Movies List -->
+            <div class="movies-grid" id="moviesContainer">
+                <!-- Movies will be dynamically added here -->
+                <div class="empty-state">
+                    <p>No movies yet. Add your first movie above!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Movie Tracker. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
