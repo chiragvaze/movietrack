@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-box {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #e50914;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #c40812;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🎬 MovieTrack API Connection Test</h1>
+    
+    <div class="test-box">
+        <h3>1. Test Backend Connection</h3>
+        <button onclick="testConnection()">Test Connection</button>
+        <div id="connection-result" class="result"></div>
+    </div>
+
+    <div class="test-box">
+        <h3>2. Test Signup</h3>
+        <input type="text" id="signup-name" placeholder="Name" style="padding: 8px; margin: 5px;">
+        <input type="email" id="signup-email" placeholder="Email" style="padding: 8px; margin: 5px;">
+        <input type="password" id="signup-password" placeholder="Password" style="padding: 8px; margin: 5px;">
+        <button onclick="testSignup()">Test Signup</button>
+        <div id="signup-result" class="result"></div>
+    </div>
+
+    <div class="test-box">
+        <h3>3. Test Login</h3>
+        <input type="email" id="login-email" placeholder="Email" style="padding: 8px; margin: 5px;">
+        <input type="password" id="login-password" placeholder="Password" style="padding: 8px; margin: 5px;">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result" class="result"></div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        async function testConnection() {
+            const result = document.getElementById('connection-result');
+            result.textContent = 'Testing connection...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/me', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.status === 401) {
+                    result.innerHTML = '<span class="success">✅ Backend is running and responding!</span>\n\nStatus: 401 (expected - no token provided)';
+                } else {
+                    result.innerHTML = '<span class="success">✅ Backend connection successful!</span>\n\nStatus: ' + response.status;
+                }
+            } catch (error) {
+                result.innerHTML = '<span class="error">❌ Connection failed!</span>\n\nError: ' + error.message + '\n\nMake sure backend is running on http://localhost:5000';
+            }
+        }
+
+        async function testSignup() {
+            const result = document.getElementById('signup-result');
+            result.textContent = 'Processing...';
+            
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            
+            if (!name || !email || !password) {
+                result.innerHTML = '<span class="error">Please fill in all fields!</span>';
+                return;
+            }
+            
+            try {
+                const response = await API.signup(name, email, password);
+                result.innerHTML = '<span class="success">✅ Signup successful!</span>\n\n' + JSON.stringify(response, null, 2);
+            } catch (error) {
+                result.innerHTML = '<span class="error">❌ Signup failed!</span>\n\n' + error.message;
+            }
+        }
+
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.textContent = 'Processing...';
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                result.innerHTML = '<span class="error">Please fill in all fields!</span>';
+                return;
+            }
+            
+            try {
+                const response = await API.login(email, password);
+                result.innerHTML = '<span class="success">✅ Login successful!</span>\n\n' + JSON.stringify(response, null, 2);
+            } catch (error) {
+                result.innerHTML = '<span class="error">❌ Login failed!</span>\n\n' + error.message;
+            }
+        }
+
+        // Auto-test connection on load
+        window.addEventListener('load', testConnection);
+    </script>
+</body>
+</html>

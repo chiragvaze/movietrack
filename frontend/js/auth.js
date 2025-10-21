@@ -59,25 +59,30 @@ if (loginForm) {
         
         if (!isValid) return;
         
-        // For demo purposes, we'll use localStorage
-        // In production, this would be an API call to your backend
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const user = users.find(u => u.email === email && u.password === password);
+        // Show loading state
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.textContent = 'Logging in...';
+        submitBtn.disabled = true;
         
-        if (user) {
-            // Store current user
-            localStorage.setItem('currentUser', JSON.stringify({
-                name: user.name,
-                email: user.email
-            }));
+        try {
+            // Call the real API
+            const response = await API.login(email, password);
             
-            showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
-            
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1500);
-        } else {
-            showMessage('loginMessage', 'Invalid email or password', 'error');
+            if (response.success) {
+                // Store user info
+                localStorage.setItem('currentUser', JSON.stringify(response.user));
+                
+                showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            }
+        } catch (error) {
+            showMessage('loginMessage', error.message || 'Login failed. Please try again.', 'error');
+            submitBtn.textContent = originalBtnText;
+            submitBtn.disabled = false;
         }
     });
 }
@@ -119,31 +124,28 @@ if (signupForm) {
         
         if (!isValid) return;
         
-        // Check if user already exists
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        const existingUser = users.find(u => u.email === email);
+        // Show loading state
+        const submitBtn = signupForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.textContent = 'Creating account...';
+        submitBtn.disabled = true;
         
-        if (existingUser) {
-            showMessage('signupMessage', 'Email already registered', 'error');
-            return;
+        try {
+            // Call the real API
+            const response = await API.signup(name, email, password);
+            
+            if (response.success) {
+                showMessage('signupMessage', 'Account created successfully! Redirecting to login...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            }
+        } catch (error) {
+            showMessage('signupMessage', error.message || 'Signup failed. Please try again.', 'error');
+            submitBtn.textContent = originalBtnText;
+            submitBtn.disabled = false;
         }
-        
-        // Create new user
-        const newUser = {
-            name,
-            email,
-            password, // In production, this should be hashed on the backend
-            createdAt: new Date().toISOString()
-        };
-        
-        users.push(newUser);
-        localStorage.setItem('users', JSON.stringify(users));
-        
-        showMessage('signupMessage', 'Account created successfully! Redirecting to login...', 'success');
-        
-        setTimeout(() => {
-            window.location.href = 'login.html';
-        }, 2000);
     });
 }
 
