@@ -26,7 +26,10 @@ app.use('/api/', limiter);
 
 // CORS configuration
 const corsOptions = {
-    origin: process.env.CLIENT_URL || '*',
+    origin: [
+        'http://localhost:3000',
+        'https://movietrack-three.vercel.app'
+    ],
     credentials: true,
     optionsSuccessStatus: 200
 };
