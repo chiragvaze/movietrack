@@ -110,8 +110,46 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📍 API URL: http://localhost:${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+});
+
+// Set keep-alive timeout (helps with cloud deployments)
+server.keepAliveTimeout = 120000; // 120 seconds
+server.headersTimeout = 120000; // 120 seconds
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+    console.log('👋 SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+        console.log('💤 HTTP server closed');
+        mongoose.connection.close(false, () => {
+            console.log('💤 MongoDB connection closed');
+            process.exit(0);
+        });
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('👋 SIGINT signal received: closing HTTP server');
+    server.close(() => {
+        console.log('💤 HTTP server closed');
+        mongoose.connection.close(false, () => {
+            console.log('💤 MongoDB connection closed');
+            process.exit(0);
+        });
+    });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('❌ Unhandled Rejection:', err);
+    process.exit(1);
 });
