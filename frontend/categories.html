@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories - MovieTrack</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <!-- Hamburger Menu Button -->
+            <button class="hamburger-menu" id="hamburgerBtn" title="Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="nav-brand">
+                <h1><i class="fas fa-film"></i> MOVIETRACK</h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                <li><a href="categories.html" class="active"><i class="fas fa-th-large"></i> Categories</a></li>
+                <li><a href="#" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-moon"></i></a></li>
+                <li><a href="#" id="profileBtn" class="profile-icon"><i class="fas fa-user-circle"></i></a></li>
+                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-film"></i> Menu</h3>
+            <button class="close-sidebar" id="closeSidebarBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Search in Sidebar -->
+            <div class="sidebar-search">
+                <input type="text" id="sidebarSearchInput" placeholder="Search movies & TV shows...">
+                <i class="fas fa-search"></i>
+                <div id="sidebarSearchResults" class="tmdb-results" style="display: none;"></div>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <!-- Active Features -->
+                <li class="menu-section-title">Browse</li>
+                <li>
+                    <a href="#" id="sidebarUpcoming">
+                        <i class="fas fa-clock"></i>
+                        <span>Upcoming Releases</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="categories.html">
+                        <i class="fas fa-th-large"></i>
+                        <span>Categories</span>
+                    </a>
+                </li>
+                
+                <li class="menu-divider"></li>
+                
+                <!-- Coming Soon Features -->
+                <li class="menu-section-title">Features</li>
+                <li>
+                    <a href="#" class="coming-soon">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
+                        <span class="badge">Coming Soon</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- Main Content -->
+    <section class="dashboard-section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-th-large"></i> Browse by Categories</h2>
+                <p>Discover movies and TV shows by genre</p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="categories-search-wrapper">
+                <div class="category-search-bar">
+                    <input type="text" id="categorySearchInput" placeholder="Search for movies or TV shows...">
+                    <button id="categorySearchBtn"><i class="fas fa-search"></i></button>
+                </div>
+            </div>
+
+            <!-- Category Filter Buttons -->
+            <div class="category-filters-section">
+                <div class="filters-header">
+                    <h3>Select Categories (Multiple)</h3>
+                    <button id="clearFiltersBtn" class="clear-filters-btn">
+                        <i class="fas fa-times-circle"></i> Clear All Filters
+                    </button>
+                </div>
+                <div class="category-filter-buttons" id="categoryFilterButtons">
+                    <!-- Buttons will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-header">
+                <h3 id="resultsTitle">All Movies & TV Shows</h3>
+                <p id="resultsCount">Loading...</p>
+            </div>
+
+            <!-- Movies/Shows Grid -->
+            <div class="movies-grid" id="categoriesGrid">
+                <!-- Loading spinner -->
+                <div class="loading-spinner" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--primary-color);"></i>
+                    <p style="margin-top: 1rem;">Loading content...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Movie Tracker. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/categories.js"></script>
+</body>
+</html>

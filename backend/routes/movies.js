@@ -119,11 +119,11 @@ router.get('/:id', async (req, res) => {
 });
 
 // @route   POST /api/movies
-// @desc    Add new movie
+// @desc    Add new movie/TV show
 // @access  Private
 router.post('/', [
     body('title').trim().notEmpty().withMessage('Title is required'),
-    body('status').isIn(['watched', 'watchlist']).withMessage('Status must be watched or watchlist')
+    body('status').isIn(['watched', 'watching', 'watchlist']).withMessage('Status must be watched, watching, or watchlist')
 ], async (req, res) => {
     // Check for validation errors
     const errors = validationResult(req);
@@ -135,16 +135,45 @@ router.post('/', [
     }
     
     try {
-        const { title, year, status, rating, notes } = req.body;
+        const { 
+            type, title, year, status, rating, notes,
+            // TMDB fields
+            tmdbId, poster, backdrop, genre, director, cast, 
+            runtime, plot, imdbRating, watchedDate,
+            // TV Show fields
+            numberOfSeasons, numberOfEpisodes, currentSeason, currentEpisode, seasonDetails
+        } = req.body;
+        
+        console.log('📥 Received data:', { type, title, poster, genre });
         
         const movie = await Movie.create({
             user: req.user.id,
+            type: type || 'movie',
             title,
             year: year || new Date().getFullYear(),
             status,
             rating: rating || 0,
-            notes
+            notes,
+            // Include TMDB fields
+            tmdbId,
+            poster,
+            backdrop,
+            genre,
+            director,
+            cast,
+            runtime,
+            plot,
+            imdbRating,
+            watchedDate,
+            // TV Show fields
+            numberOfSeasons,
+            numberOfEpisodes,
+            currentSeason,
+            currentEpisode,
+            seasonDetails
         });
+        
+        console.log('💾 Saved to database:', { type: movie.type, title: movie.title, poster: movie.poster });
         
         res.status(201).json({
             success: true,

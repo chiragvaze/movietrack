@@ -156,4 +156,101 @@ router.get('/me', protect, async (req, res) => {
     }
 });
 
+// @route   PUT /api/auth/update-profile
+// @desc    Update user profile (name)
+// @access  Private
+router.put('/update-profile', protect, [
+    body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters')
+], async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            errors: errors.array()
+        });
+    }
+
+    const { name } = req.body;
+
+    try {
+        // Update user
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { name },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                createdAt: user.createdAt
+            }
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
+// @route   POST /api/auth/reset-password
+// @desc    Reset password with email and username verification
+// @access  Public
+router.post('/reset-password', [
+    body('email').isEmail().withMessage('Please provide a valid email'),
+    body('name').trim().notEmpty().withMessage('Username is required'),
+    body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            errors: errors.array()
+        });
+    }
+
+    const { email, name, newPassword } = req.body;
+
+    try {
+        // Find user by email and name
+        const user = await User.findOne({ email, name });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'No account found with this email and username combination'
+            });
+        }
+
+        // Update password (will be hashed by the pre-save hook)
+        user.password = newPassword;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Password reset successfully. You can now login with your new password.'
+        });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while resetting password'
+        });
+    }
+});
+
 module.exports = router;

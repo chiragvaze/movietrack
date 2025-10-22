@@ -15,6 +15,9 @@ const API_CONFIG = {
 
 // API Helper Functions
 const API = {
+    // Base URL for API requests
+    baseURL: 'http://localhost:5000/api',
+    
     // Get auth token from localStorage
     getToken() {
         return localStorage.getItem('token');
@@ -98,6 +101,14 @@ const API = {
     
     async getCurrentUser() {
         return await this.request(API_CONFIG.ENDPOINTS.ME, {
+            auth: true
+        });
+    },
+    
+    async updateUserProfile(name) {
+        return await this.request('/auth/update-profile', {
+            method: 'PUT',
+            body: JSON.stringify({ name }),
             auth: true
         });
     },

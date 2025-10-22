@@ -6,9 +6,16 @@ const MovieSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    // Type: movie or tv
+    type: {
+        type: String,
+        enum: ['movie', 'tv'],
+        required: true,
+        default: 'movie'
+    },
     title: {
         type: String,
-        required: [true, 'Please add a movie title'],
+        required: [true, 'Please add a title'],
         trim: true,
         maxlength: [200, 'Title cannot exceed 200 characters']
     },
@@ -19,7 +26,7 @@ const MovieSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['watched', 'watchlist'],
+        enum: ['watched', 'watchlist', 'watching'],  // Added 'watching' for TV shows
         required: [true, 'Please add a status'],
         default: 'watchlist'
     },
@@ -32,6 +39,65 @@ const MovieSchema = new mongoose.Schema({
     notes: {
         type: String,
         maxlength: [1000, 'Notes cannot exceed 1000 characters']
+    },
+    // TMDB Integration
+    tmdbId: {
+        type: Number
+    },
+    poster: {
+        type: String  // URL to poster image
+    },
+    backdrop: {
+        type: String  // URL to backdrop image
+    },
+    // Additional Details
+    genre: [{
+        type: String
+    }],
+    director: {
+        type: String,
+        maxlength: [200, 'Director name cannot exceed 200 characters']
+    },
+    cast: [{
+        type: String
+    }],
+    runtime: {
+        type: Number,  // in minutes
+        min: [0, 'Runtime cannot be negative']
+    },
+    plot: {
+        type: String,
+        maxlength: [2000, 'Plot cannot exceed 2000 characters']
+    },
+    imdbRating: {
+        type: Number,
+        min: [0, 'Rating must be at least 0'],
+        max: [10, 'Rating cannot exceed 10']
+    },
+    // TV Show Specific Fields
+    numberOfSeasons: {
+        type: Number,
+        min: [0, 'Number of seasons cannot be negative']
+    },
+    numberOfEpisodes: {
+        type: Number,
+        min: [0, 'Number of episodes cannot be negative']
+    },
+    seasonDetails: [{
+        seasonNumber: Number,
+        episodeCount: Number
+    }],
+    currentSeason: {
+        type: Number,
+        min: [0, 'Current season cannot be negative']
+    },
+    currentEpisode: {
+        type: Number,
+        min: [0, 'Current episode cannot be negative']
+    },
+    // Watch Date Tracking
+    watchedDate: {
+        type: Date
     },
     addedAt: {
         type: Date,
