@@ -6,8 +6,8 @@ const config = {
         API_URL: 'http://localhost:5000'
     },
     production: {
-        // Update this with your deployed backend URL after deployment
-        API_URL: 'https://your-backend-url.onrender.com'
+        // Production backend URL from Render
+        API_URL: 'https://movietrack-backend.onrender.com'
     }
 };
 
