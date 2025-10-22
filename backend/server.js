@@ -8,6 +8,7 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth');
 const movieRoutes = require('./routes/movies');
+const adminRoutes = require('./routes/admin');
 
 // Initialize express app
 const app = express();
@@ -46,6 +47,7 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -54,7 +56,8 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         endpoints: {
             auth: '/api/auth',
-            movies: '/api/movies'
+            movies: '/api/movies',
+            admin: '/api/admin'
         }
     });
 });

@@ -26,6 +26,20 @@ const UserSchema = new mongoose.Schema({
         minlength: [6, 'Password must be at least 6 characters'],
         select: false // Don't return password by default
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
+    status: {
+        type: String,
+        enum: ['active', 'banned'],
+        default: 'active'
+    },
+    lastLogin: {
+        type: Date,
+        default: Date.now
+    },
     createdAt: {
         type: Date,
         default: Date.now

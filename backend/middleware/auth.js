@@ -31,11 +31,31 @@ exports.protect = async (req, res, next) => {
             });
         }
 
+        // Check if user is banned
+        if (req.user.status === 'banned') {
+            return res.status(403).json({
+                success: false,
+                message: 'Your account has been banned'
+            });
+        }
+
         next();
     } catch (error) {
         return res.status(401).json({
             success: false,
             message: 'Not authorized to access this route'
+        });
+    }
+};
+
+// Admin only middleware
+exports.adminOnly = async (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied. Admin only.'
         });
     }
 };

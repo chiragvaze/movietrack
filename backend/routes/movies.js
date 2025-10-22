@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Movie = require('../models/Movie');
+const ActivityLog = require('../models/ActivityLog');
 const { protect } = require('../middleware/auth');
 
 // All routes are protected (require authentication)
@@ -174,6 +175,15 @@ router.post('/', [
         });
         
         console.log('💾 Saved to database:', { type: movie.type, title: movie.title, poster: movie.poster });
+
+        // Log activity
+        await ActivityLog.create({
+            userId: req.user.id,
+            userName: req.user.name,
+            action: 'add_movie',
+            details: `Added ${type || 'movie'}: ${title}`,
+            ipAddress: req.ip
+        });
         
         res.status(201).json({
             success: true,
@@ -219,6 +229,15 @@ router.put('/:id', async (req, res) => {
                 runValidators: true
             }
         );
+
+        // Log activity
+        await ActivityLog.create({
+            userId: req.user.id,
+            userName: req.user.name,
+            action: 'update_movie',
+            details: `Updated ${movie.type || 'movie'}: ${movie.title}`,
+            ipAddress: req.ip
+        });
         
         res.json({
             success: true,
@@ -257,6 +276,15 @@ router.delete('/:id', async (req, res) => {
         }
         
         await movie.deleteOne();
+
+        // Log activity
+        await ActivityLog.create({
+            userId: req.user.id,
+            userName: req.user.name,
+            action: 'delete_movie',
+            details: `Deleted ${movie.type || 'movie'}: ${movie.title}`,
+            ipAddress: req.ip
+        });
         
         res.json({
             success: true,
