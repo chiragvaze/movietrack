@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-box {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #2d5016; color: #7bed9f; }
+        .error { background: #5c1616; color: #ff7979; }
+        .info { background: #16365c; color: #74b9ff; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5568d3; }
+        pre {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 MovieTrack API Connection Test</h1>
+    
+    <div class="test-box">
+        <h2>Environment Detection</h2>
+        <div id="envInfo"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>API Connection Test</h2>
+        <button onclick="testBackend()">Test Backend</button>
+        <button onclick="testSignup()">Test Signup API</button>
+        <button onclick="testLogin()">Test Login API</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Instructions</h2>
+        <p>1. Check if environment is detected correctly (should be "production" when deployed)</p>
+        <p>2. Click "Test Backend" to verify API is reachable</p>
+        <p>3. Try signup/login tests to see exact error messages</p>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // Display environment info
+        document.getElementById('envInfo').innerHTML = `
+            <div class="status info">
+                <strong>Hostname:</strong> ${window.location.hostname}<br>
+                <strong>Environment:</strong> ${environment}<br>
+                <strong>API URL:</strong> ${API_URL}
+            </div>
+        `;
+
+        async function testBackend() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<div class="status info">Testing backend connection...</div>';
+            
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                results.innerHTML = `
+                    <div class="status success">
+                        ✅ Backend is reachable!
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="status error">
+                        ❌ Error connecting to backend:<br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testSignup() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<div class="status info">Testing signup endpoint...</div>';
+            
+            try {
+                const response = await fetch(API_URL + '/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: 'test' + Date.now() + '@test.com',
+                        password: 'TestPass123!'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    results.innerHTML = `
+                        <div class="status success">
+                            ✅ Signup endpoint working!
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="status error">
+                            ⚠️ Signup failed (but endpoint is reachable):<br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="status error">
+                        ❌ Error calling signup API:<br>
+                        ${error.message}<br><br>
+                        This usually means CORS is blocking the request.
+                    </div>
+                `;
+            }
+        }
+
+        async function testLogin() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<div class="status info">Testing login endpoint...</div>';
+            
+            try {
+                const response = await fetch(API_URL + '/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@test.com',
+                        password: 'wrongpassword'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                results.innerHTML = `
+                    <div class="status ${response.ok ? 'success' : 'info'}">
+                        ${response.ok ? '✅' : 'ℹ️'} Login endpoint reachable (invalid credentials expected):<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="status error">
+                        ❌ Error calling login API:<br>
+                        ${error.message}<br><br>
+                        This usually means CORS is blocking the request.
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run backend test on load
+        window.onload = () => {
+            testBackend();
+        };
+    </script>
+</body>
+</html>
