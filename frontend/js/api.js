@@ -1,6 +1,7 @@
 // API Configuration
+// API_URL is loaded from config.js
 const API_CONFIG = {
-    BASE_URL: 'http://localhost:5000/api',
+    BASE_URL: (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:5000') + '/api',
     ENDPOINTS: {
         // Authentication
         SIGNUP: '/auth/signup',
@@ -16,7 +17,7 @@ const API_CONFIG = {
 // API Helper Functions
 const API = {
     // Base URL for API requests
-    baseURL: 'http://localhost:5000/api',
+    baseURL: (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:5000') + '/api',
     
     // Get auth token from localStorage
     getToken() {
