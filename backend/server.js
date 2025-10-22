@@ -37,7 +37,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB (removed deprecated options)
-mongoose.connect(process.env.MONGODB_URI)
+// Use MONGO_URI for production, fallback to MONGODB_URI for local dev
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+mongoose.connect(mongoUri)
 .then(() => console.log('✅ MongoDB Connected Successfully'))
 .catch(err => {
     console.error('❌ MongoDB Connection Error:', err.message);
