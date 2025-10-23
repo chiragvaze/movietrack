@@ -1,4 +1,4 @@
-# Movie Tracker - Frontend
+# Movie Tracker - Frontend v2.2.0
 
 A simple, elegant movie tracking application built with **Vanilla JavaScript, HTML5, and CSS3**.
 
@@ -12,6 +12,32 @@ A simple, elegant movie tracking application built with **Vanilla JavaScript, HT
 - **Statistics Dashboard**: View your watching statistics
 - **Filter Movies**: Filter by status (all, watched, watchlist)
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
+
+### Advanced Features (v2.1)
+- **🎭 Categories System**: Browse movies by genre with TMDB integration
+- **📊 Analytics Dashboard**: Comprehensive statistics with interactive charts
+  - Viewing trends and patterns
+  - Rating distribution analysis
+  - Genre preferences visualization
+  - Top-rated content lists
+  - Watch time tracking
+
+### Smart Features (v2.2)
+- **🤖 Smart Recommendations Engine**: AI-powered movie suggestions
+  - Content-based recommendations (similar to your favorites)
+  - Genre-based discovery (personalized to your preferences)
+  - Trending content recommendations
+  - Filters out movies you already own
+  
+- **🏆 Achievement/Badges System**: Gamification with 25 unique achievements
+  - **Collection Badges**: First Movie, Growing Collection, Movie Buff, Cinema Enthusiast, Movie Master
+  - **Rating Badges**: First Review, Critical Eye, Harsh Critic, Five Star Fan, Rating Pro
+  - **Watch Time Badges**: Movie Marathon, Weekend Warrior, Cinema Addict, Time Traveler
+  - **Genre Exploration**: Genre Explorer, Action Hero, Romance Reader, Sci-Fi Scholar, Horror Survivor
+  - **Streak Achievements**: Week Warrior, Month Master, Year Champion
+  - **Special Achievements**: Binge Watcher, Quality Curator, Completionist
+  - Real-time unlock notifications with animations
+  - Progress tracking and achievement modal
 
 ### 🆕 Enhanced Features (v2.0)
 - ⭐ **TMDB Integration**: Auto-fill movie data with posters from TheMovieDB
