@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - MovieTrack</title>
+    <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <!-- Hamburger Menu Button -->
+            <button class="hamburger-menu" id="hamburgerBtn" title="Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="nav-brand">
+                <a href="dashboard.html" class="logo-link">
+                    <img src="assets/logo.svg" alt="MovieTrack Logo" class="logo-svg">
+                    <h1>MOVIETRACK</h1>
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                <li><a href="categories.html"><i class="fas fa-layer-group"></i> Categories</a></li>
+                <li><a href="#" id="viewModeBtn" class="view-mode-btn" title="Change View Mode"><i class="fas fa-th"></i></a></li>
+                <li><a href="#" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-moon"></i></a></li>
+                <li><a href="#" id="profileBtn" class="profile-icon"><i class="fas fa-user-circle"></i></a></li>
+                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="settings-page">
+        <div class="container">
+            <!-- Settings Header -->
+            <div class="settings-header">
+                <div class="header-content">
+                    <a href="dashboard.html" class="back-link">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <h1><i class="fas fa-cog"></i> Settings</h1>
+                    <p class="subtitle">Customize your MovieTrack experience</p>
+                </div>
+            </div>
+
+            <!-- Settings Layout -->
+            <div class="settings-layout">
+                <!-- Settings Sidebar Navigation -->
+                <aside class="settings-sidebar">
+                    <nav class="settings-nav">
+                        <button class="settings-nav-item active" data-section="profile">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="appearance">
+                            <i class="fas fa-palette"></i>
+                            <span>Appearance</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="content">
+                            <i class="fas fa-film"></i>
+                            <span>Content</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="notifications">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="dashboard">
+                            <i class="fas fa-th-large"></i>
+                            <span>Dashboard</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="recommendations">
+                            <i class="fas fa-magic"></i>
+                            <span>Recommendations</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="achievements">
+                            <i class="fas fa-trophy"></i>
+                            <span>Achievements</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="data">
+                            <i class="fas fa-database"></i>
+                            <span>Data & Privacy</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="accessibility">
+                            <i class="fas fa-universal-access"></i>
+                            <span>Accessibility</span>
+                        </button>
+                        <button class="settings-nav-item" data-section="about">
+                            <i class="fas fa-info-circle"></i>
+                            <span>About</span>
+                        </button>
+                    </nav>
+                </aside>
+
+                <!-- Settings Content -->
+                <div class="settings-content">
+                    <!-- Profile Section -->
+                    <section id="profile-section" class="settings-section active">
+                        <h2><i class="fas fa-user"></i> Profile Settings</h2>
+                        <p class="section-description">Manage your account information</p>
+
+                        <div class="settings-card">
+                            <div class="setting-item">
+                                <label for="username">Username</label>
+                                <input type="text" id="username" class="setting-input" placeholder="Enter username">
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" class="setting-input" placeholder="Enter email" readonly>
+                                <small class="setting-hint">Email cannot be changed</small>
+                            </div>
+
+                            <div class="setting-item">
+                                <label>Member Since</label>
+                                <input type="text" id="memberSince" class="setting-input" readonly>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Change Password</h3>
+                            <div class="setting-item">
+                                <label for="currentPassword">Current Password</label>
+                                <input type="password" id="currentPassword" class="setting-input" placeholder="Enter current password">
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="newPassword">New Password</label>
+                                <input type="password" id="newPassword" class="setting-input" placeholder="Enter new password">
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="confirmPassword">Confirm New Password</label>
+                                <input type="password" id="confirmPassword" class="setting-input" placeholder="Confirm new password">
+                            </div>
+
+                            <button class="btn btn-primary" id="changePasswordBtn">
+                                <i class="fas fa-key"></i> Change Password
+                            </button>
+                        </div>
+
+                        <div class="settings-card danger-zone">
+                            <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                            <p>Once you delete your account, there is no going back. Please be certain.</p>
+                            <button class="btn btn-danger" id="deleteAccountBtn">
+                                <i class="fas fa-trash"></i> Delete Account
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Appearance Section -->
+                    <section id="appearance-section" class="settings-section">
+                        <h2><i class="fas fa-palette"></i> Appearance</h2>
+                        <p class="section-description">Customize how MovieTrack looks</p>
+
+                        <div class="settings-card">
+                            <h3>Theme</h3>
+                            <div class="setting-item">
+                                <label>Color Scheme</label>
+                                <div class="theme-selector">
+                                    <button class="theme-option active" data-theme="dark">
+                                        <i class="fas fa-moon"></i>
+                                        <span>Dark</span>
+                                    </button>
+                                    <button class="theme-option" data-theme="light">
+                                        <i class="fas fa-sun"></i>
+                                        <span>Light</span>
+                                    </button>
+                                    <button class="theme-option" data-theme="auto">
+                                        <i class="fas fa-adjust"></i>
+                                        <span>Auto</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Display Options</h3>
+                            <div class="setting-item">
+                                <label for="defaultView">Default View Mode</label>
+                                <select id="defaultView" class="setting-select">
+                                    <option value="grid">Grid View</option>
+                                    <option value="list">List View</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="cardsPerRow">Cards Per Row</label>
+                                <select id="cardsPerRow" class="setting-select">
+                                    <option value="3">3 Columns</option>
+                                    <option value="4">4 Columns</option>
+                                    <option value="5">5 Columns</option>
+                                    <option value="6">6 Columns</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="posterQuality">Poster Quality</label>
+                                <select id="posterQuality" class="setting-select">
+                                    <option value="high">High Quality</option>
+                                    <option value="medium">Medium Quality</option>
+                                    <option value="low">Low Quality (Faster)</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Year on Cards</label>
+                                    <small>Display release year on movie cards</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showYear" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Runtime on Cards</label>
+                                    <small>Display movie runtime on cards</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showRuntime" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Content Preferences Section -->
+                    <section id="content-section" class="settings-section">
+                        <h2><i class="fas fa-film"></i> Content Preferences</h2>
+                        <p class="section-description">Control what content you see</p>
+
+                        <div class="settings-card">
+                            <h3>Default Filters</h3>
+                            <div class="setting-item">
+                                <label for="defaultMediaType">Default Media Type</label>
+                                <select id="defaultMediaType" class="setting-select">
+                                    <option value="both">Movies & TV Shows</option>
+                                    <option value="movie">Movies Only</option>
+                                    <option value="tv">TV Shows Only</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="defaultLanguage">Content Language</label>
+                                <select id="defaultLanguage" class="setting-select">
+                                    <option value="en">English</option>
+                                    <option value="es">Spanish</option>
+                                    <option value="fr">French</option>
+                                    <option value="de">German</option>
+                                    <option value="ja">Japanese</option>
+                                    <option value="ko">Korean</option>
+                                    <option value="hi">Hindi</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="defaultRegion">Region</label>
+                                <select id="defaultRegion" class="setting-select">
+                                    <option value="US">United States</option>
+                                    <option value="GB">United Kingdom</option>
+                                    <option value="IN">India</option>
+                                    <option value="CA">Canada</option>
+                                    <option value="AU">Australia</option>
+                                    <option value="JP">Japan</option>
+                                    <option value="KR">South Korea</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Adult Content</label>
+                                    <small>Show mature/adult content in searches</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="adultContent">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Spoiler Protection</label>
+                                    <small>Blur plot descriptions until clicked</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="spoilerProtection">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>TMDB Integration</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Auto-fetch Posters</label>
+                                    <small>Automatically download movie posters from TMDB</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="autoFetchPosters" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Auto-fill Details</label>
+                                    <small>Automatically fill movie details from TMDB</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="autoFillDetails" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Notifications Section -->
+                    <section id="notifications-section" class="settings-section">
+                        <h2><i class="fas fa-bell"></i> Notifications</h2>
+                        <p class="section-description">Manage your notification preferences</p>
+
+                        <div class="settings-card">
+                            <h3>Achievement Notifications</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Achievement Unlocks</label>
+                                    <small>Display notifications when you unlock achievements</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="achievementNotifs" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="notifDuration">Notification Duration</label>
+                                <select id="notifDuration" class="setting-select">
+                                    <option value="3000">3 seconds</option>
+                                    <option value="5000" selected>5 seconds</option>
+                                    <option value="8000">8 seconds</option>
+                                    <option value="10000">10 seconds</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="notifPosition">Notification Position</label>
+                                <select id="notifPosition" class="setting-select">
+                                    <option value="top-right" selected>Top Right</option>
+                                    <option value="top-left">Top Left</option>
+                                    <option value="bottom-right">Bottom Right</option>
+                                    <option value="bottom-left">Bottom Left</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Notification Sound</label>
+                                    <small>Play sound when achievements are unlocked</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="notifSound">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Toast Notifications</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Success Messages</label>
+                                    <small>Display notifications for successful actions</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="successToasts" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Error Messages</label>
+                                    <small>Display notifications for errors</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="errorToasts" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Dashboard Section -->
+                    <section id="dashboard-section" class="settings-section">
+                        <h2><i class="fas fa-th-large"></i> Dashboard</h2>
+                        <p class="section-description">Customize your dashboard layout</p>
+
+                        <div class="settings-card">
+                            <h3>Default View</h3>
+                            <div class="setting-item">
+                                <label for="defaultDashboard">Default Dashboard Section</label>
+                                <select id="defaultDashboard" class="setting-select">
+                                    <option value="movies" selected>My Movies</option>
+                                    <option value="analytics">Analytics</option>
+                                    <option value="recommendations">Recommendations</option>
+                                    <option value="achievements">Achievements</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="defaultSort">Default Sort Order</label>
+                                <select id="defaultSort" class="setting-select">
+                                    <option value="dateAdded">Date Added (Newest)</option>
+                                    <option value="title">Title (A-Z)</option>
+                                    <option value="year">Year (Newest)</option>
+                                    <option value="rating">Rating (Highest)</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="defaultFilter">Default Filter</label>
+                                <select id="defaultFilter" class="setting-select">
+                                    <option value="all" selected>All Movies</option>
+                                    <option value="watched">Watched</option>
+                                    <option value="watchlist">Watchlist</option>
+                                    <option value="watching">Watching</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Visible Sections</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Quick Stats</label>
+                                    <small>Display total movies, watch time, etc.</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showQuickStats" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Analytics Charts</label>
+                                    <small>Display analytics dashboard with charts</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showAnalytics" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Recommendations</label>
+                                    <small>Display movie recommendations section</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showRecommendations" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Recent Additions</label>
+                                    <small>Display recently added movies section</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showRecent" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Recommendations Section -->
+                    <section id="recommendations-section" class="settings-section">
+                        <h2><i class="fas fa-magic"></i> Recommendations</h2>
+                        <p class="section-description">Configure recommendation algorithms</p>
+
+                        <div class="settings-card">
+                            <h3>Recommendation Algorithms</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Content-Based Recommendations</label>
+                                    <small>Recommend movies similar to your favorites</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="recContentBased" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Genre-Based Recommendations</label>
+                                    <small>Recommend movies from your favorite genres</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="recGenreBased" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Trending Recommendations</label>
+                                    <small>Show currently trending movies</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="recTrending" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Recommendation Filters</h3>
+                            <div class="setting-item">
+                                <label for="recMinRating">Minimum Rating Filter</label>
+                                <select id="recMinRating" class="setting-select">
+                                    <option value="0">No Filter</option>
+                                    <option value="5">5+ Stars Only</option>
+                                    <option value="6">6+ Stars</option>
+                                    <option value="7" selected>7+ Stars</option>
+                                    <option value="8">8+ Stars</option>
+                                </select>
+                                <small class="setting-hint">Based on TMDB ratings (0-10)</small>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="recPerSection">Results Per Section</label>
+                                <select id="recPerSection" class="setting-select">
+                                    <option value="5">5 Movies</option>
+                                    <option value="10" selected>10 Movies</option>
+                                    <option value="15">15 Movies</option>
+                                    <option value="20">20 Movies</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Hide Similar to Watched</label>
+                                    <small>Don't recommend movies similar to ones you've watched</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="recHideSimilar">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Achievements Section -->
+                    <section id="achievements-section" class="settings-section">
+                        <h2><i class="fas fa-trophy"></i> Achievements</h2>
+                        <p class="section-description">Configure achievement system</p>
+
+                        <div class="settings-card">
+                            <h3>Achievement Display</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Show Progress Hints</label>
+                                    <small>Display progress hints on locked achievements</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="achievementHints" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Celebrate Unlocks</label>
+                                    <small>Show confetti animation on achievement unlock</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="achievementCelebration" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item">
+                                <label for="achievementSort">Sort Achievements By</label>
+                                <select id="achievementSort" class="setting-select">
+                                    <option value="category" selected>Category</option>
+                                    <option value="earned">Earned First</option>
+                                    <option value="locked">Locked First</option>
+                                    <option value="difficulty">Difficulty</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="settings-card danger-zone">
+                            <h3><i class="fas fa-redo"></i> Reset Achievements</h3>
+                            <p>This will reset all your achievements. This action cannot be undone.</p>
+                            <button class="btn btn-danger" id="resetAchievementsBtn">
+                                <i class="fas fa-redo"></i> Reset All Achievements
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Data & Privacy Section -->
+                    <section id="data-section" class="settings-section">
+                        <h2><i class="fas fa-database"></i> Data & Privacy</h2>
+                        <p class="section-description">Manage your data and privacy</p>
+
+                        <div class="settings-card">
+                            <h3>Export Data</h3>
+                            <p>Download all your movie data in different formats</p>
+                            <div class="export-buttons">
+                                <button class="btn btn-secondary" id="exportJsonBtn">
+                                    <i class="fas fa-file-code"></i> Export as JSON
+                                </button>
+                                <button class="btn btn-secondary" id="exportCsvBtn">
+                                    <i class="fas fa-file-csv"></i> Export as CSV
+                                </button>
+                                <button class="btn btn-secondary" id="exportPdfBtn">
+                                    <i class="fas fa-file-pdf"></i> Export as PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Import Data</h3>
+                            <p>Import previously exported data</p>
+                            <div class="setting-item">
+                                <input type="file" id="importFile" accept=".json,.csv" style="display: none;">
+                                <button class="btn btn-secondary" id="importDataBtn">
+                                    <i class="fas fa-upload"></i> Import Data
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Cache Management</h3>
+                            <div class="setting-item">
+                                <label>Local Storage Usage</label>
+                                <div class="storage-info">
+                                    <div class="storage-bar">
+                                        <div class="storage-used" id="storageUsed" style="width: 0%"></div>
+                                    </div>
+                                    <p id="storageText">Calculating...</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" id="clearCacheBtn">
+                                <i class="fas fa-broom"></i> Clear Cache
+                            </button>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Privacy</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Analytics Tracking</label>
+                                    <small>Help improve MovieTrack by sharing anonymous usage data</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="analyticsTracking" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Accessibility Section -->
+                    <section id="accessibility-section" class="settings-section">
+                        <h2><i class="fas fa-universal-access"></i> Accessibility</h2>
+                        <p class="section-description">Make MovieTrack easier to use</p>
+
+                        <div class="settings-card">
+                            <h3>Display Options</h3>
+                            <div class="setting-item">
+                                <label for="fontSize">Font Size</label>
+                                <select id="fontSize" class="setting-select">
+                                    <option value="small">Small</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="large">Large</option>
+                                    <option value="xlarge">Extra Large</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Reduce Motion</label>
+                                    <small>Minimize animations and transitions</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="reduceMotion">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>High Contrast Mode</label>
+                                    <small>Increase contrast for better visibility</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="highContrast">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Keyboard Shortcuts</label>
+                                    <small>Enable keyboard navigation shortcuts</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="keyboardShortcuts" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Screen Reader</h3>
+                            <div class="setting-item toggle-item">
+                                <div class="toggle-info">
+                                    <label>Enhanced ARIA Labels</label>
+                                    <small>Optimize for screen reader support</small>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="ariaLabels" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- About Section -->
+                    <section id="about-section" class="settings-section">
+                        <h2><i class="fas fa-info-circle"></i> About</h2>
+                        <p class="section-description">Information about MovieTrack</p>
+
+                        <div class="settings-card about-card">
+                            <div class="about-logo">
+                                <img src="assets/logo.svg" alt="MovieTrack Logo" class="about-logo-img">
+                                <h3>MovieTrack</h3>
+                            </div>
+                            
+                            <div class="about-info">
+                                <div class="about-item">
+                                    <label>Version</label>
+                                    <span>2.2.0</span>
+                                </div>
+                                <div class="about-item">
+                                    <label>Release Date</label>
+                                    <span>October 2025</span>
+                                </div>
+                                <div class="about-item">
+                                    <label>Build</label>
+                                    <span>Production</span>
+                                </div>
+                            </div>
+
+                            <div class="about-links">
+                                <a href="https://github.com/chiragvaze/movietrack" target="_blank" class="about-link">
+                                    <i class="fab fa-github"></i> View on GitHub
+                                </a>
+                                <a href="#" class="about-link" id="changelogLink">
+                                    <i class="fas fa-history"></i> Changelog
+                                </a>
+                                <a href="#" class="about-link" id="helpLink">
+                                    <i class="fas fa-question-circle"></i> Help & FAQ
+                                </a>
+                                <a href="#" class="about-link" id="reportBugLink">
+                                    <i class="fas fa-bug"></i> Report a Bug
+                                </a>
+                            </div>
+
+                            <div class="about-footer">
+                                <p>Made with ❤️ by MovieTrack Team</p>
+                                <p class="about-legal">
+                                    <a href="#">Privacy Policy</a> • 
+                                    <a href="#">Terms of Service</a> • 
+                                    <a href="#">Licenses</a>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Credits</h3>
+                            <p>MovieTrack uses data from:</p>
+                            <div class="credits-list">
+                                <div class="credit-item">
+                                    <img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="TMDB" style="height: 20px;">
+                                    <span>The Movie Database (TMDB)</span>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-secondary);">
+                                    This product uses the TMDB API but is not endorsed or certified by TMDB.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Save Button Footer -->
+                    <div class="settings-footer">
+                        <button class="btn btn-primary btn-large" id="saveSettingsBtn">
+                            <i class="fas fa-save"></i> Save All Settings
+                        </button>
+                        <button class="btn btn-secondary btn-large" id="resetDefaultsBtn">
+                            <i class="fas fa-undo"></i> Reset to Defaults
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/settings.js"></script>
+</body>
+</html>
