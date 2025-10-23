@@ -4,38 +4,75 @@ A simple, elegant movie tracking application built with **Vanilla JavaScript, HT
 
 ## 🚀 Features
 
-- **User Authentication**: Sign up and login functionality
-- **Movie Management**: Add, view, and delete movies
-- **Status Tracking**: Mark movies as "Watched" or "Watchlist"
+### Core Features
+- **User Authentication**: Secure sign up and login with JWT tokens
+- **Movie Management**: Add, view, edit, and delete movies
+- **Status Tracking**: Mark movies as "Watched", "Watchlist", or "Watching"
 - **Rating System**: Rate movies from 1-5 stars
 - **Statistics Dashboard**: View your watching statistics
-- **Filter Movies**: Filter by all, watched, or watchlist
+- **Filter Movies**: Filter by status (all, watched, watchlist)
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Local Storage**: Data persists in browser
+
+### 🆕 Enhanced Features (v2.0)
+- ⭐ **TMDB Integration**: Auto-fill movie data with posters from TheMovieDB
+- ⭐ **Real-time Search**: Search as you type with 300ms debounce
+- ⭐ **Sort Movies**: Sort by title, year, rating, or date added
+- ⭐ **Genre Filtering**: Browse by 18+ movie genres
+- ⭐ **Toast Notifications**: Beautiful success/error/info messages
+- ⭐ **Skeleton Loaders**: Smooth loading animations
+- ⭐ **Back-to-Top Button**: Easy navigation on long lists
+- ⭐ **Custom Confirm Modal**: Elegant confirmation dialogs
+- ⭐ **Detailed View**: Click cards to see full info (cast, plot, runtime)
+- ⭐ **Movie Recommendations**: TMDB-powered suggestions based on your collection
+
+### 📊 Analytics Dashboard (NEW!)
+- 📈 **Quick Stats**: Total content, estimated watch time, average rating, day streak
+- 🥧 **Content Distribution Chart**: Pie chart showing Movies vs TV Shows ratio
+- 📊 **Genre Analysis**: Bar chart of your top 8 favorite genres
+- ⭐ **Rating Distribution**: Color-coded rating breakdown (0-5 stars)
+- 📅 **7-Day Activity Timeline**: Line chart showing your weekly activity pattern
+- 🏆 **Top Rated List**: Your 5 highest-rated movies and shows
+- 🆕 **Recent Additions**: 5 most recently added items with dates
+- 🎯 **Real-time Updates**: Charts auto-generate from your collection using Chart.js
 
 ## 📁 Project Structure
 
 ```
 frontend/
-├── index.html          # Landing page
-├── login.html          # Login page
-├── signup.html         # Sign up page
-├── dashboard.html      # Main dashboard
+├── index.html                   # Landing page
+├── login.html                   # Login page
+├── signup.html                  # Sign up page
+├── dashboard.html               # Main dashboard with analytics
+├── categories.html              # Genre browsing page 🆕
+├── admin-login.html             # Admin authentication 🆕
+├── admin-dashboard.html         # Admin panel 🆕
+├── assets/
+│   └── logo.svg                 # Application logo 🆕
 ├── css/
-│   └── styles.css      # All styling
+│   ├── styles.css               # Main styling (Netflix theme)
+│   └── admin-styles.css         # Admin panel styles 🆕
 ├── js/
-│   ├── app.js          # Main application logic
-│   ├── auth.js         # Authentication handling
-│   └── dashboard.js    # Dashboard functionality
-└── README.md           # This file
+│   ├── api.js                   # API service layer
+│   ├── auth.js                  # Authentication handling
+│   ├── dashboard-enhanced.js    # Enhanced dashboard with analytics 📊
+│   ├── tmdb.js                  # TMDB API integration 🆕
+│   ├── categories.js            # Categories page logic 🆕
+│   ├── admin-login.js           # Admin authentication 🆕
+│   ├── admin.js                 # Admin dashboard logic 🆕
+│   └── config.js                # Configuration settings 🆕
+└── README.md                    # This file
 ```
 
 ## 🛠️ Technologies Used
 
-- **HTML5**: Semantic markup
-- **CSS3**: Modern styling with Flexbox and Grid
-- **Vanilla JavaScript (ES6+)**: No frameworks or libraries
-- **LocalStorage API**: Client-side data persistence
+- **HTML5**: Semantic markup with modern structure
+- **CSS3**: Advanced styling with Flexbox, Grid, animations, and transitions
+- **Vanilla JavaScript (ES6+)**: Async/await, modules, modern syntax
+- **Font Awesome 6.4.0**: Beautiful icons throughout the UI
+- **Chart.js 4.4.0**: Interactive charts for analytics dashboard 📊
+- **TMDB API**: Movie data, posters, and recommendations
+- **JWT**: JSON Web Tokens for secure authentication
+- **Netflix-inspired Design**: Dark theme with red accents
 
 ## 🎯 Getting Started
 
@@ -77,15 +114,36 @@ Then visit `http://localhost:8000` in your browser.
 ### Adding Movies
 
 1. Login to your account
-2. Use the "Add New Movie" form on the dashboard
-3. Enter movie title, year, status (watched/watchlist), and rating
-4. Click "Add Movie"
+2. Click "Add Movie" button on the dashboard
+3. Search for movie in TMDB database (auto-complete suggestions)
+4. Select movie from results (auto-fills all data + poster)
+5. Or manually enter movie details
+6. Set status (watched/watchlist/watching) and rating
+7. Click "Add Movie"
 
 ### Managing Movies
 
+- **Search**: Use the search bar to find movies by title
+- **Sort**: Use the sort dropdown (title, year, rating, date added)
 - **Filter**: Click filter buttons to view all, watched, or watchlist movies
-- **Delete**: Click the trash icon on any movie card to remove it
-- **View Stats**: See your statistics at the top of the dashboard
+- **Edit**: Click the edit icon to modify movie details
+- **Delete**: Click the trash icon (with custom confirm modal)
+- **View Details**: Click any movie card for full information
+- **View Stats**: See statistics at the top of the dashboard
+- **View Analytics**: Click "Analytics" in sidebar for comprehensive charts 📊
+
+### Analytics Dashboard 📊
+
+1. Click "Analytics" in the sidebar menu
+2. View your collection statistics:
+   - **Quick Stats**: Total content, watch time, avg rating, streak
+   - **Content Distribution**: Pie chart of Movies vs TV Shows
+   - **Top Genres**: Bar chart of your favorite genres
+   - **Rating Distribution**: See how you rate content (color-coded)
+   - **7-Day Activity**: Track your weekly adding pattern
+   - **Top Rated**: Your highest-rated movies/shows
+   - **Recent Additions**: Latest items you've added
+3. Charts update automatically based on your collection
 
 ### Logging Out
 
