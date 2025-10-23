@@ -97,18 +97,40 @@ body {
 }
 
 .nav-brand h1 {
-    font-size: 1.6rem;
-    font-weight: 900;
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
     letter-spacing: 1px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    transition: color 0.3s ease;
 }
 
-.nav-brand h1 i {
+.logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+}
+
+.logo-svg {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    transition: transform 0.3s ease;
+}
+
+.logo-link:hover .logo-svg {
+    transform: rotate(-10deg) scale(1.1);
+}
+
+.logo-link h1 {
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+}
+
+.logo-link:hover h1 {
     color: var(--primary-color);
-    font-size: 1.8rem;
 }
 
 .nav-menu {
@@ -2773,7 +2795,7 @@ footer {
 
 .category-search-bar:focus-within {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1);
+    box-shadow:  0 0 0 3px rgba(229, 9, 20, 0.1);
 }
 
 .category-search-bar input {
@@ -2808,10 +2830,6 @@ footer {
 .category-search-bar button:hover {
     background: var(--primary-dark);
     transform: scale(1.05);
-}
-
-.category-search-bar button i {
-    font-size: 1.1rem;
 }
 
 /* Search Results Dropdown */
