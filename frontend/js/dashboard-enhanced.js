@@ -56,6 +56,77 @@ let currentFilter = 'all';
 let currentTypeFilter = null;
 let searchQuery = '';
 let selectedGenre = null;
+let currentSort = 'title-asc'; // Default sort
+
+/**
+ * Custom confirmation dialog
+ */
+function showConfirm(title, message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const messageEl = document.getElementById('confirmModalMessage');
+        const yesBtn = document.getElementById('confirmModalYes');
+        const noBtn = document.getElementById('confirmModalNo');
+        
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.classList.add('show');
+        
+        const handleYes = () => {
+            modal.classList.remove('show');
+            yesBtn.removeEventListener('click', handleYes);
+            noBtn.removeEventListener('click', handleNo);
+            resolve(true);
+        };
+        
+        const handleNo = () => {
+            modal.classList.remove('show');
+            yesBtn.removeEventListener('click', handleYes);
+            noBtn.removeEventListener('click', handleNo);
+            resolve(false);
+        };
+        
+        yesBtn.addEventListener('click', handleYes);
+        noBtn.addEventListener('click', handleNo);
+    });
+}
+
+/**
+ * Sort movies based on selected criteria
+ */
+function sortMovies(moviesToSort) {
+    const sorted = [...moviesToSort];
+    
+    switch (currentSort) {
+        case 'title-asc':
+            sorted.sort((a, b) => a.title.localeCompare(b.title));
+            break;
+        case 'title-desc':
+            sorted.sort((a, b) => b.title.localeCompare(a.title));
+            break;
+        case 'year-desc':
+            sorted.sort((a, b) => (b.year || 0) - (a.year || 0));
+            break;
+        case 'year-asc':
+            sorted.sort((a, b) => (a.year || 0) - (b.year || 0));
+            break;
+        case 'rating-desc':
+            sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+            break;
+        case 'rating-asc':
+            sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+            break;
+        case 'date-desc':
+            sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+            break;
+        default:
+            sorted.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    
+    return sorted;
+}
+
 
 /**
  * Renders skeleton loaders for the movie cards.
@@ -277,6 +348,9 @@ function renderMovies() {
             m.genre && m.genre.includes(selectedGenre)
         );
     }
+    
+    // Apply sorting
+    filteredMovies = sortMovies(filteredMovies);
     
     if (filteredMovies.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>No movies found. Try adjusting your filters or add a new movie!</p></div>';
@@ -894,15 +968,23 @@ async function quickAddAsWatched(tmdbId, type) {
 
 // Delete movie
 async function deleteMovie(movieId) {
-    if (confirm('Are you sure you want to delete this movie?')) {
+    const movie = movies.find(m => m._id === movieId);
+    const movieTitle = movie ? movie.title : 'this movie';
+    
+    const confirmed = await showConfirm(
+        'Delete Movie',
+        `Are you sure you want to delete "${movieTitle}"? This action cannot be undone.`
+    );
+    
+    if (confirmed) {
         try {
             const response = await API.deleteMovie(movieId);
             if (response.success) {
                 await loadMovies();
-                showNotification('Movie deleted');
+                showToast(`"${movieTitle}" deleted successfully`, 'info');
             }
         } catch (error) {
-            showNotification(error.message || 'Failed to delete movie', 'error');
+            showToast(error.message || 'Failed to delete movie', 'error');
         }
     }
 }
@@ -1585,6 +1667,48 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         backToTopBtn.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+    
+    // Sort Dropdown
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            renderMovies();
+            showToast('Sorted successfully', 'info');
+        });
+    }
+    
+    // Real-time Search
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchQuery = e.target.value.trim();
+                renderMovies();
+                
+                const clearBtn = document.getElementById('clearSearch');
+                if (clearBtn) {
+                    clearBtn.style.display = searchQuery ? 'block' : 'none';
+                }
+            }, 300); // Debounce for 300ms
+        });
+    }
+    
+    // Clear Search Button
+    const clearSearchBtn = document.getElementById('clearSearch');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', () => {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                searchQuery = '';
+                renderMovies();
+                clearSearchBtn.style.display = 'none';
+            }
         });
     }
 });

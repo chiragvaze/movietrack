@@ -364,6 +364,18 @@
                                 <i class="fas fa-tv"></i> TV Shows
                             </button>
                         </div>
+                        <div class="sort-dropdown">
+                            <label for="sortSelect"><i class="fas fa-sort"></i> Sort by:</label>
+                            <select id="sortSelect">
+                                <option value="title-asc">Title (A-Z)</option>
+                                <option value="title-desc">Title (Z-A)</option>
+                                <option value="year-desc">Year (Newest)</option>
+                                <option value="year-asc">Year (Oldest)</option>
+                                <option value="rating-desc">Rating (Highest)</option>
+                                <option value="rating-asc">Rating (Lowest)</option>
+                                <option value="date-desc">Recently Added</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -386,6 +398,25 @@
     </footer>
 
     <div id="toast-container"></div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 id="confirmModalTitle">Confirm Action</h3>
+            <p id="confirmModalMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-modal-actions">
+                <button class="btn btn-danger" id="confirmModalYes">
+                    <i class="fas fa-check"></i> Yes
+                </button>
+                <button class="btn btn-secondary" id="confirmModalNo">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Back to Top Button -->
     <button id="backToTopBtn" title="Go to top"><i class="fas fa-arrow-up"></i></button>
