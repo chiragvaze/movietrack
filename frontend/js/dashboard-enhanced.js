@@ -2,6 +2,40 @@
 // TMDB API Key
 const TMDB_API_KEY = '409d37969fa9cdbc46f0baf72ff9c6d2';
 
+/**
+ * Displays a toast notification.
+ * @param {string} message - The message to display.
+ * @param {string} [type='success'] - The type of toast (success, error, info).
+ */
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const iconClass = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        info: 'fa-info-circle'
+    }[type];
+
+    toast.innerHTML = `<i class="fas ${iconClass}"></i> ${message}`;
+    
+    container.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+
+    // Animate out and remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        toast.addEventListener('transitionend', () => toast.remove());
+    }, 3000);
+}
+
 function checkAuth() {
     const user = localStorage.getItem('currentUser');
     const token = API.getToken();
@@ -23,8 +57,32 @@ let currentTypeFilter = null;
 let searchQuery = '';
 let selectedGenre = null;
 
+/**
+ * Renders skeleton loaders for the movie cards.
+ */
+function renderSkeletonLoader() {
+    const container = document.getElementById('moviesContainer');
+    if (!container) return;
+    
+    let skeletons = '';
+    for (let i = 0; i < 6; i++) {
+        skeletons += `
+            <div class="movie-card skeleton">
+                <div class="movie-poster-skeleton"></div>
+                <div class="movie-details">
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text skeleton-text-short"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            </div>
+        `;
+    }
+    container.innerHTML = skeletons;
+}
+
 // Load movies
 async function loadMovies() {
+    renderSkeletonLoader();
     try {
         const response = await API.getMovies();
         if (response.success) {
@@ -38,7 +96,7 @@ async function loadMovies() {
         }
     } catch (error) {
         console.error('Error loading movies:', error);
-        showNotification('Failed to load movies', 'error');
+        showToast('Failed to load movies', 'error');
     }
 }
 
@@ -1512,3 +1570,21 @@ initSidebar();
 window.openRecommendationDetails = openRecommendationDetails;
 window.quickAddToWatchlist = quickAddToWatchlist;
 window.quickAddAsWatched = quickAddAsWatched;
+
+// --- EVENT LISTENERS ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Back to Top Button
+    const backToTopBtn = document.getElementById('backToTopBtn');
+    if (backToTopBtn) {
+        window.onscroll = () => {
+            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                backToTopBtn.classList.add('show');
+            } else {
+                backToTopBtn.classList.remove('show');
+            }
+        };
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+});
