@@ -1749,7 +1749,13 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function openAnalytics() {
     const modal = document.getElementById('analyticsModal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('Analytics modal not found');
+        return;
+    }
+    
+    console.log('Opening analytics with movies:', movies);
+    console.log('Movies count:', movies.length);
     
     modal.classList.add('show');
     generateAnalytics();
@@ -1769,12 +1775,15 @@ function closeAnalytics() {
  * Generates all analytics data and charts
  */
 function generateAnalytics() {
+    console.log('Generating analytics for', movies.length, 'movies');
+    
     if (!movies || movies.length === 0) {
+        console.warn('No movies available for analytics');
         // Show empty state
-        document.getElementById('totalContent').textContent = '0';
-        document.getElementById('totalWatchTime').textContent = '0h 0m';
-        document.getElementById('avgRating').textContent = '0.0';
-        document.getElementById('dayStreak').textContent = '0';
+        document.getElementById('analyticsTotal').textContent = '0';
+        document.getElementById('analyticsTotalHours').textContent = '0h 0m';
+        document.getElementById('analyticsAvgRating').textContent = '0.0';
+        document.getElementById('analyticsStreak').textContent = '0';
         return;
     }
     
@@ -1784,11 +1793,13 @@ function generateAnalytics() {
     const avgRating = calculateAverageRating(movies);
     const dayStreak = calculateDayStreak(movies);
     
+    console.log('Analytics stats:', { totalContent, totalWatchTime, avgRating, dayStreak });
+    
     // Update stat cards
-    document.getElementById('totalContent').textContent = totalContent;
-    document.getElementById('totalWatchTime').textContent = totalWatchTime;
-    document.getElementById('avgRating').textContent = avgRating;
-    document.getElementById('dayStreak').textContent = dayStreak;
+    document.getElementById('analyticsTotal').textContent = totalContent;
+    document.getElementById('analyticsTotalHours').textContent = totalWatchTime;
+    document.getElementById('analyticsAvgRating').textContent = avgRating;
+    document.getElementById('analyticsStreak').textContent = dayStreak;
     
     // Generate charts
     generateContentTypeChart(movies);
@@ -1809,9 +1820,9 @@ function calculateTotalWatchTime(movies) {
     movies.forEach(movie => {
         if (movie.type === 'movie' && movie.runtime) {
             totalMinutes += parseInt(movie.runtime) || 0;
-        } else if (movie.type === 'series' && movie.seasons) {
+        } else if (movie.type === 'tv' && movie.numberOfEpisodes) {
             // Estimate: 45 min per episode
-            const episodes = movie.seasons.reduce((sum, season) => sum + (season.episodes || 0), 0);
+            const episodes = parseInt(movie.numberOfEpisodes) || 0;
             totalMinutes += episodes * 45;
         }
     });
@@ -1825,10 +1836,10 @@ function calculateTotalWatchTime(movies) {
  * Calculates average rating
  */
 function calculateAverageRating(movies) {
-    const ratedMovies = movies.filter(m => m.personalRating);
+    const ratedMovies = movies.filter(m => m.rating && m.rating > 0);
     if (ratedMovies.length === 0) return '0.0';
     
-    const sum = ratedMovies.reduce((sum, m) => sum + (parseFloat(m.personalRating) || 0), 0);
+    const sum = ratedMovies.reduce((sum, m) => sum + (parseFloat(m.rating) || 0), 0);
     return (sum / ratedMovies.length).toFixed(1);
 }
 
@@ -1839,8 +1850,11 @@ function calculateDayStreak(movies) {
     if (movies.length === 0) return 0;
     
     const sortedDates = movies
-        .map(m => new Date(m.dateAdded))
+        .filter(m => m.createdAt)
+        .map(m => new Date(m.createdAt))
         .sort((a, b) => b - a);
+    
+    if (sortedDates.length === 0) return 0;
     
     let streak = 1;
     let currentDate = new Date(sortedDates[0]);
@@ -1871,14 +1885,16 @@ function calculateDayStreak(movies) {
 }
 
 /**
- * Generates Content Type Pie Chart (Movies vs Series)
+ * Generates Content Type Pie Chart (Movies vs TV Shows)
  */
 function generateContentTypeChart(movies) {
     const ctx = document.getElementById('contentTypeChart');
     if (!ctx) return;
     
     const movieCount = movies.filter(m => m.type === 'movie').length;
-    const seriesCount = movies.filter(m => m.type === 'series').length;
+    const tvCount = movies.filter(m => m.type === 'tv').length;
+    
+    console.log('Content type counts:', { movieCount, tvCount });
     
     // Destroy existing chart if exists
     if (window.contentTypeChartInstance) {
@@ -1888,9 +1904,9 @@ function generateContentTypeChart(movies) {
     window.contentTypeChartInstance = new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: ['Movies', 'Series'],
+            labels: ['Movies', 'TV Shows'],
             datasets: [{
-                data: [movieCount, seriesCount],
+                data: [movieCount, tvCount],
                 backgroundColor: ['#e50914', '#564d4d'],
                 borderWidth: 2,
                 borderColor: '#221f1f'
@@ -1918,12 +1934,14 @@ function generateGenreChart(movies) {
     
     const genreCounts = {};
     movies.forEach(movie => {
-        if (movie.genres && Array.isArray(movie.genres)) {
-            movie.genres.forEach(genre => {
+        if (movie.genre && Array.isArray(movie.genre)) {
+            movie.genre.forEach(genre => {
                 genreCounts[genre] = (genreCounts[genre] || 0) + 1;
             });
         }
     });
+    
+    console.log('Genre counts:', genreCounts);
     
     // Get top 8 genres
     const sortedGenres = Object.entries(genreCounts)
@@ -1977,18 +1995,21 @@ function generateRatingChart(movies) {
     const ctx = document.getElementById('ratingChart');
     if (!ctx) return;
     
-    const ratingBuckets = { '0-2': 0, '2-4': 0, '4-6': 0, '6-8': 0, '8-10': 0 };
+    // Rating is 0-5 scale, create buckets: 0-1, 1-2, 2-3, 3-4, 4-5
+    const ratingBuckets = { '0-1': 0, '1-2': 0, '2-3': 0, '3-4': 0, '4-5': 0 };
     
     movies.forEach(movie => {
-        const rating = parseFloat(movie.personalRating);
-        if (!rating) return;
+        const rating = parseFloat(movie.rating);
+        if (!rating || rating === 0) return;
         
-        if (rating >= 0 && rating < 2) ratingBuckets['0-2']++;
-        else if (rating >= 2 && rating < 4) ratingBuckets['2-4']++;
-        else if (rating >= 4 && rating < 6) ratingBuckets['4-6']++;
-        else if (rating >= 6 && rating < 8) ratingBuckets['6-8']++;
-        else if (rating >= 8 && rating <= 10) ratingBuckets['8-10']++;
+        if (rating > 0 && rating <= 1) ratingBuckets['0-1']++;
+        else if (rating > 1 && rating <= 2) ratingBuckets['1-2']++;
+        else if (rating > 2 && rating <= 3) ratingBuckets['2-3']++;
+        else if (rating > 3 && rating <= 4) ratingBuckets['3-4']++;
+        else if (rating > 4 && rating <= 5) ratingBuckets['4-5']++;
     });
+    
+    console.log('Rating distribution:', ratingBuckets);
     
     // Destroy existing chart if exists
     if (window.ratingChartInstance) {
@@ -1998,7 +2019,7 @@ function generateRatingChart(movies) {
     window.ratingChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['0-2', '2-4', '4-6', '6-8', '8-10'],
+            labels: ['0-1⭐', '1-2⭐', '2-3⭐', '3-4⭐', '4-5⭐'],
             datasets: [{
                 label: 'Number of Ratings',
                 data: Object.values(ratingBuckets),
@@ -2052,7 +2073,8 @@ function generateActivityChart(movies) {
     
     const activityCounts = last7Days.map(date => {
         return movies.filter(movie => {
-            const movieDate = new Date(movie.dateAdded);
+            if (!movie.createdAt) return false;
+            const movieDate = new Date(movie.createdAt);
             movieDate.setHours(0, 0, 0, 0);
             return movieDate.getTime() === date.getTime();
         }).length;
@@ -2062,6 +2084,8 @@ function generateActivityChart(movies) {
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         return days[date.getDay()];
     });
+    
+    console.log('Activity timeline:', { labels, activityCounts });
     
     // Destroy existing chart if exists
     if (window.activityChartInstance) {
@@ -2113,9 +2137,11 @@ function generateTopRatedList(movies) {
     if (!listElement) return;
     
     const topRated = movies
-        .filter(m => m.personalRating)
-        .sort((a, b) => parseFloat(b.personalRating) - parseFloat(a.personalRating))
+        .filter(m => m.rating && m.rating > 0)
+        .sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating))
         .slice(0, 5);
+    
+    console.log('Top rated movies:', topRated);
     
     if (topRated.length === 0) {
         listElement.innerHTML = '<p style="color: var(--text-secondary);">No rated content yet</p>';
@@ -2127,9 +2153,9 @@ function generateTopRatedList(movies) {
             <div class="analytics-movie-rank">${index + 1}</div>
             <div class="analytics-movie-info">
                 <p class="analytics-movie-title">${movie.title}</p>
-                <p class="analytics-movie-meta">${movie.year || 'N/A'} • ${movie.type === 'movie' ? 'Movie' : 'Series'}</p>
+                <p class="analytics-movie-meta">${movie.year || 'N/A'} • ${movie.type === 'movie' ? 'Movie' : 'TV Show'}</p>
             </div>
-            <div class="analytics-movie-rating">⭐ ${movie.personalRating}</div>
+            <div class="analytics-movie-rating">⭐ ${movie.rating.toFixed(1)}</div>
         </div>
     `).join('');
 }
@@ -2142,8 +2168,11 @@ function generateRecentList(movies) {
     if (!listElement) return;
     
     const recent = movies
-        .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
+        .filter(m => m.createdAt)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5);
+    
+    console.log('Recent movies:', recent);
     
     if (recent.length === 0) {
         listElement.innerHTML = '<p style="color: var(--text-secondary);">No content yet</p>';
@@ -2151,7 +2180,7 @@ function generateRecentList(movies) {
     }
     
     listElement.innerHTML = recent.map((movie, index) => {
-        const date = new Date(movie.dateAdded);
+        const date = new Date(movie.createdAt);
         const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
         return `
@@ -2159,9 +2188,9 @@ function generateRecentList(movies) {
                 <div class="analytics-movie-rank">${index + 1}</div>
                 <div class="analytics-movie-info">
                     <p class="analytics-movie-title">${movie.title}</p>
-                    <p class="analytics-movie-meta">${formattedDate} • ${movie.type === 'movie' ? 'Movie' : 'Series'}</p>
+                    <p class="analytics-movie-meta">${formattedDate} • ${movie.type === 'movie' ? 'Movie' : 'TV Show'}</p>
                 </div>
-                ${movie.personalRating ? `<div class="analytics-movie-rating">⭐ ${movie.personalRating}</div>` : ''}
+                ${movie.rating && movie.rating > 0 ? `<div class="analytics-movie-rating">⭐ ${movie.rating.toFixed(1)}</div>` : ''}
             </div>
         `;
     }).join('');
