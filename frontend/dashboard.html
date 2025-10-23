@@ -7,6 +7,7 @@
     <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -72,10 +73,9 @@
                 <!-- Coming Soon Features -->
                 <li class="menu-section-title">Features</li>
                 <li>
-                    <a href="#" class="coming-soon">
+                    <a href="#" id="sidebarAnalytics">
                         <i class="fas fa-chart-line"></i>
                         <span>Analytics</span>
-                        <span class="badge">Coming Soon</span>
                     </a>
                 </li>
                 <li>
@@ -414,6 +414,100 @@
                 <button class="btn btn-secondary" id="confirmModalNo">
                     <i class="fas fa-times"></i> Cancel
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Modal -->
+    <div id="analyticsModal" class="analytics-modal">
+        <div class="analytics-modal-content">
+            <div class="analytics-modal-header">
+                <h2><i class="fas fa-chart-line"></i> Your Movie Analytics</h2>
+                <button class="close-analytics" id="closeAnalytics">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="analytics-body">
+                <!-- Quick Stats Grid -->
+                <div class="analytics-stats-grid">
+                    <div class="analytics-stat-card">
+                        <div class="analytics-stat-icon">
+                            <i class="fas fa-film"></i>
+                        </div>
+                        <div class="analytics-stat-info">
+                            <h3 id="analyticsTotal">0</h3>
+                            <p>Total Content</p>
+                        </div>
+                    </div>
+                    <div class="analytics-stat-card">
+                        <div class="analytics-stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="analytics-stat-info">
+                            <h3 id="analyticsTotalHours">0h</h3>
+                            <p>Est. Watch Time</p>
+                        </div>
+                    </div>
+                    <div class="analytics-stat-card">
+                        <div class="analytics-stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="analytics-stat-info">
+                            <h3 id="analyticsAvgRating">0.0</h3>
+                            <p>Avg Rating</p>
+                        </div>
+                    </div>
+                    <div class="analytics-stat-card">
+                        <div class="analytics-stat-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="analytics-stat-info">
+                            <h3 id="analyticsStreak">0</h3>
+                            <p>Day Streak</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="analytics-charts">
+                    <div class="analytics-chart-card">
+                        <h3><i class="fas fa-chart-pie"></i> Content Distribution</h3>
+                        <canvas id="contentTypeChart"></canvas>
+                    </div>
+                    
+                    <div class="analytics-chart-card">
+                        <h3><i class="fas fa-chart-bar"></i> Top Genres</h3>
+                        <canvas id="genreChart"></canvas>
+                    </div>
+                    
+                    <div class="analytics-chart-card full-width">
+                        <h3><i class="fas fa-chart-line"></i> Rating Distribution</h3>
+                        <canvas id="ratingChart"></canvas>
+                    </div>
+
+                    <div class="analytics-chart-card full-width">
+                        <h3><i class="fas fa-calendar-alt"></i> Watch Activity</h3>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Movies Lists -->
+                <div class="analytics-lists">
+                    <div class="analytics-list-card">
+                        <h3><i class="fas fa-trophy"></i> Highest Rated</h3>
+                        <div id="topRatedList" class="analytics-movie-list">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-list-card">
+                        <h3><i class="fas fa-heart"></i> Most Recent</h3>
+                        <div id="recentList" class="analytics-movie-list">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

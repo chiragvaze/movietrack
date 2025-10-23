@@ -1711,4 +1711,458 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // Analytics Sidebar Click
+    const analyticsBtn = document.getElementById('sidebarAnalytics');
+    if (analyticsBtn) {
+        analyticsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openAnalytics();
+            
+            // Close sidebar on mobile
+            const sidebar = document.querySelector('.sidebar');
+            if (window.innerWidth <= 768 && sidebar) {
+                sidebar.classList.remove('active');
+            }
+        });
+    }
+    
+    // Close Analytics Modal
+    const closeAnalyticsBtn = document.querySelector('.close-analytics');
+    if (closeAnalyticsBtn) {
+        closeAnalyticsBtn.addEventListener('click', closeAnalytics);
+    }
+    
+    // Close on outside click
+    const analyticsModal = document.getElementById('analyticsModal');
+    if (analyticsModal) {
+        analyticsModal.addEventListener('click', (e) => {
+            if (e.target === analyticsModal) {
+                closeAnalytics();
+            }
+        });
+    }
 });
+
+/**
+ * Opens the Analytics Modal and generates charts
+ */
+function openAnalytics() {
+    const modal = document.getElementById('analyticsModal');
+    if (!modal) return;
+    
+    modal.classList.add('show');
+    generateAnalytics();
+}
+
+/**
+ * Closes the Analytics Modal
+ */
+function closeAnalytics() {
+    const modal = document.getElementById('analyticsModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+/**
+ * Generates all analytics data and charts
+ */
+function generateAnalytics() {
+    if (!movies || movies.length === 0) {
+        // Show empty state
+        document.getElementById('totalContent').textContent = '0';
+        document.getElementById('totalWatchTime').textContent = '0h 0m';
+        document.getElementById('avgRating').textContent = '0.0';
+        document.getElementById('dayStreak').textContent = '0';
+        return;
+    }
+    
+    // Calculate stats
+    const totalContent = movies.length;
+    const totalWatchTime = calculateTotalWatchTime(movies);
+    const avgRating = calculateAverageRating(movies);
+    const dayStreak = calculateDayStreak(movies);
+    
+    // Update stat cards
+    document.getElementById('totalContent').textContent = totalContent;
+    document.getElementById('totalWatchTime').textContent = totalWatchTime;
+    document.getElementById('avgRating').textContent = avgRating;
+    document.getElementById('dayStreak').textContent = dayStreak;
+    
+    // Generate charts
+    generateContentTypeChart(movies);
+    generateGenreChart(movies);
+    generateRatingChart(movies);
+    generateActivityChart(movies);
+    
+    // Generate movie lists
+    generateTopRatedList(movies);
+    generateRecentList(movies);
+}
+
+/**
+ * Calculates total watch time from movies
+ */
+function calculateTotalWatchTime(movies) {
+    let totalMinutes = 0;
+    movies.forEach(movie => {
+        if (movie.type === 'movie' && movie.runtime) {
+            totalMinutes += parseInt(movie.runtime) || 0;
+        } else if (movie.type === 'series' && movie.seasons) {
+            // Estimate: 45 min per episode
+            const episodes = movie.seasons.reduce((sum, season) => sum + (season.episodes || 0), 0);
+            totalMinutes += episodes * 45;
+        }
+    });
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+}
+
+/**
+ * Calculates average rating
+ */
+function calculateAverageRating(movies) {
+    const ratedMovies = movies.filter(m => m.personalRating);
+    if (ratedMovies.length === 0) return '0.0';
+    
+    const sum = ratedMovies.reduce((sum, m) => sum + (parseFloat(m.personalRating) || 0), 0);
+    return (sum / ratedMovies.length).toFixed(1);
+}
+
+/**
+ * Calculates consecutive day streak
+ */
+function calculateDayStreak(movies) {
+    if (movies.length === 0) return 0;
+    
+    const sortedDates = movies
+        .map(m => new Date(m.dateAdded))
+        .sort((a, b) => b - a);
+    
+    let streak = 1;
+    let currentDate = new Date(sortedDates[0]);
+    currentDate.setHours(0, 0, 0, 0);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Check if most recent is today or yesterday
+    const daysDiff = Math.floor((today - currentDate) / (1000 * 60 * 60 * 24));
+    if (daysDiff > 1) return 0; // Streak broken
+    
+    for (let i = 1; i < sortedDates.length; i++) {
+        const prevDate = new Date(sortedDates[i]);
+        prevDate.setHours(0, 0, 0, 0);
+        
+        const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+        
+        if (diff === 1) {
+            streak++;
+            currentDate = prevDate;
+        } else if (diff > 1) {
+            break;
+        }
+    }
+    
+    return streak;
+}
+
+/**
+ * Generates Content Type Pie Chart (Movies vs Series)
+ */
+function generateContentTypeChart(movies) {
+    const ctx = document.getElementById('contentTypeChart');
+    if (!ctx) return;
+    
+    const movieCount = movies.filter(m => m.type === 'movie').length;
+    const seriesCount = movies.filter(m => m.type === 'series').length;
+    
+    // Destroy existing chart if exists
+    if (window.contentTypeChartInstance) {
+        window.contentTypeChartInstance.destroy();
+    }
+    
+    window.contentTypeChartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Movies', 'Series'],
+            datasets: [{
+                data: [movieCount, seriesCount],
+                backgroundColor: ['#e50914', '#564d4d'],
+                borderWidth: 2,
+                borderColor: '#221f1f'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#e5e5e5', font: { size: 12 } }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Generates Genre Bar Chart
+ */
+function generateGenreChart(movies) {
+    const ctx = document.getElementById('genreChart');
+    if (!ctx) return;
+    
+    const genreCounts = {};
+    movies.forEach(movie => {
+        if (movie.genres && Array.isArray(movie.genres)) {
+            movie.genres.forEach(genre => {
+                genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+            });
+        }
+    });
+    
+    // Get top 8 genres
+    const sortedGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+    
+    const labels = sortedGenres.map(g => g[0]);
+    const data = sortedGenres.map(g => g[1]);
+    
+    // Destroy existing chart if exists
+    if (window.genreChartInstance) {
+        window.genreChartInstance.destroy();
+    }
+    
+    window.genreChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Titles',
+                data: data,
+                backgroundColor: '#e50914',
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#e5e5e5', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#e5e5e5' },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+/**
+ * Generates Rating Distribution Chart
+ */
+function generateRatingChart(movies) {
+    const ctx = document.getElementById('ratingChart');
+    if (!ctx) return;
+    
+    const ratingBuckets = { '0-2': 0, '2-4': 0, '4-6': 0, '6-8': 0, '8-10': 0 };
+    
+    movies.forEach(movie => {
+        const rating = parseFloat(movie.personalRating);
+        if (!rating) return;
+        
+        if (rating >= 0 && rating < 2) ratingBuckets['0-2']++;
+        else if (rating >= 2 && rating < 4) ratingBuckets['2-4']++;
+        else if (rating >= 4 && rating < 6) ratingBuckets['4-6']++;
+        else if (rating >= 6 && rating < 8) ratingBuckets['6-8']++;
+        else if (rating >= 8 && rating <= 10) ratingBuckets['8-10']++;
+    });
+    
+    // Destroy existing chart if exists
+    if (window.ratingChartInstance) {
+        window.ratingChartInstance.destroy();
+    }
+    
+    window.ratingChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['0-2', '2-4', '4-6', '6-8', '8-10'],
+            datasets: [{
+                label: 'Number of Ratings',
+                data: Object.values(ratingBuckets),
+                backgroundColor: [
+                    '#dc3545',
+                    '#fd7e14',
+                    '#ffc107',
+                    '#28a745',
+                    '#20c997'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#e5e5e5', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#e5e5e5' },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+/**
+ * Generates Activity Timeline Chart (Last 7 days)
+ */
+function generateActivityChart(movies) {
+    const ctx = document.getElementById('activityChart');
+    if (!ctx) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        last7Days.push(date);
+    }
+    
+    const activityCounts = last7Days.map(date => {
+        return movies.filter(movie => {
+            const movieDate = new Date(movie.dateAdded);
+            movieDate.setHours(0, 0, 0, 0);
+            return movieDate.getTime() === date.getTime();
+        }).length;
+    });
+    
+    const labels = last7Days.map(date => {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return days[date.getDay()];
+    });
+    
+    // Destroy existing chart if exists
+    if (window.activityChartInstance) {
+        window.activityChartInstance.destroy();
+    }
+    
+    window.activityChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Items Added',
+                data: activityCounts,
+                borderColor: '#e50914',
+                backgroundColor: 'rgba(229, 9, 20, 0.2)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#e50914',
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#e5e5e5', stepSize: 1 },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#e5e5e5' },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+/**
+ * Generates Top Rated Movies List
+ */
+function generateTopRatedList(movies) {
+    const listElement = document.getElementById('topRatedList');
+    if (!listElement) return;
+    
+    const topRated = movies
+        .filter(m => m.personalRating)
+        .sort((a, b) => parseFloat(b.personalRating) - parseFloat(a.personalRating))
+        .slice(0, 5);
+    
+    if (topRated.length === 0) {
+        listElement.innerHTML = '<p style="color: var(--text-secondary);">No rated content yet</p>';
+        return;
+    }
+    
+    listElement.innerHTML = topRated.map((movie, index) => `
+        <div class="analytics-movie-item">
+            <div class="analytics-movie-rank">${index + 1}</div>
+            <div class="analytics-movie-info">
+                <p class="analytics-movie-title">${movie.title}</p>
+                <p class="analytics-movie-meta">${movie.year || 'N/A'} • ${movie.type === 'movie' ? 'Movie' : 'Series'}</p>
+            </div>
+            <div class="analytics-movie-rating">⭐ ${movie.personalRating}</div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Generates Most Recent Movies List
+ */
+function generateRecentList(movies) {
+    const listElement = document.getElementById('recentList');
+    if (!listElement) return;
+    
+    const recent = movies
+        .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
+        .slice(0, 5);
+    
+    if (recent.length === 0) {
+        listElement.innerHTML = '<p style="color: var(--text-secondary);">No content yet</p>';
+        return;
+    }
+    
+    listElement.innerHTML = recent.map((movie, index) => {
+        const date = new Date(movie.dateAdded);
+        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        return `
+            <div class="analytics-movie-item">
+                <div class="analytics-movie-rank">${index + 1}</div>
+                <div class="analytics-movie-info">
+                    <p class="analytics-movie-title">${movie.title}</p>
+                    <p class="analytics-movie-meta">${formattedDate} • ${movie.type === 'movie' ? 'Movie' : 'Series'}</p>
+                </div>
+                ${movie.personalRating ? `<div class="analytics-movie-rating">⭐ ${movie.personalRating}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+}
