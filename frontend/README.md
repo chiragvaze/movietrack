@@ -1,4 +1,4 @@
-# Movie Tracker - Frontend v2.2.0
+# Movie Tracker - Frontend v2.3.0
 
 A simple, elegant movie tracking application built with **Vanilla JavaScript, HTML5, and CSS3**.
 
@@ -39,6 +39,22 @@ A simple, elegant movie tracking application built with **Vanilla JavaScript, HT
   - Real-time unlock notifications with animations
   - Progress tracking and achievement modal
 
+### ⚙️ Settings System (v2.3) **NEW!**
+- **🔧 Comprehensive Settings Page** with 10 organized sections:
+  1. **Profile Settings**: Update username, change password, delete account
+  2. **Appearance**: Theme selection (Dark/Light/Auto), view mode, grid columns, poster quality
+  3. **Content Preferences**: Media type, language, region, adult content filter, spoiler protection
+  4. **Notifications**: Achievement alerts, toast notifications, duration, position, sound effects
+  5. **Dashboard Customization**: Default view, sort order, visible sections
+  6. **Recommendations**: Algorithm toggles, rating filters, results limit
+  7. **Achievements**: Progress hints, celebration effects, sorting, reset option
+  8. **Data & Privacy**: Export (JSON/CSV/PDF), import data, storage usage, clear cache
+  9. **Accessibility**: Font size, reduce motion, high contrast, keyboard shortcuts
+  10. **About**: Version info, credits, help links, changelog
+- **💾 Full Data Portability**: Export/import entire movie collection
+- **🎨 Persistent Preferences**: All settings saved to localStorage
+- **📊 Storage Tracking**: Visual display of local storage usage
+
 ### 🆕 Enhanced Features (v2.0)
 - ⭐ **TMDB Integration**: Auto-fill movie data with posters from TheMovieDB
 - ⭐ **Real-time Search**: Search as you type with 300ms debounce
@@ -51,7 +67,7 @@ A simple, elegant movie tracking application built with **Vanilla JavaScript, HT
 - ⭐ **Detailed View**: Click cards to see full info (cast, plot, runtime)
 - ⭐ **Movie Recommendations**: TMDB-powered suggestions based on your collection
 
-### 📊 Analytics Dashboard (NEW!)
+### 📊 Analytics Dashboard (v2.1)
 - 📈 **Quick Stats**: Total content, estimated watch time, average rating, day streak
 - 🥧 **Content Distribution Chart**: Pie chart showing Movies vs TV Shows ratio
 - 📊 **Genre Analysis**: Bar chart of your top 8 favorite genres

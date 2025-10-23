@@ -352,7 +352,7 @@ async function getSmartRecommendations(userProfile) {
     // Strategy 3: Trending in your preferred type
     console.log('📈 Strategy 3: Trending content...');
     try {
-        const trending = await TMDB.getTrending(userProfile.preferredType, 5);
+        const trending = await TMDB.getTrending(userProfile.preferredType, 'week', 5);
         trending.forEach(rec => {
             rec.reason = 'Trending now';
             rec.strategy = 'trending';
