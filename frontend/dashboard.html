@@ -79,6 +79,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#" id="sidebarAchievements">
+                        <i class="fas fa-trophy"></i>
+                        <span>Achievements</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#" class="coming-soon">
                         <i class="fas fa-users"></i>
                         <span>Friends</span>
@@ -512,12 +518,31 @@
         </div>
     </div>
 
+    <!-- Achievements Modal -->
+    <div id="achievementsModal" class="achievements-modal">
+        <div class="achievements-modal-content">
+            <div class="achievements-modal-header">
+                <h2><i class="fas fa-trophy"></i> Achievements</h2>
+                <button class="close-achievements" id="closeAchievements">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="achievements-body" id="achievementsContent">
+                <!-- Achievements will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievement Notification Container -->
+    <div id="achievement-container"></div>
+
     <!-- Back to Top Button -->
     <button id="backToTopBtn" title="Go to top"><i class="fas fa-arrow-up"></i></button>
 
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/tmdb.js"></script>
+    <script src="js/achievements.js"></script>
     <script src="js/dashboard-enhanced.js"></script>
 </body>
 </html>

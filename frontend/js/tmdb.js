@@ -266,5 +266,36 @@ const TMDB = {
             console.error('TMDB trending error:', error);
             return [];
         }
+    },
+    
+    // Discover content by genre
+    async discoverByGenre(mediaType, genreId, limit = 10) {
+        try {
+            const response = await fetch(
+                `${TMDB_CONFIG.BASE_URL}/discover/${mediaType}?api_key=${TMDB_CONFIG.API_KEY}&with_genres=${genreId}&sort_by=vote_average.desc&vote_count.gte=100`
+            );
+            
+            if (!response.ok) {
+                throw new Error('Failed to discover by genre');
+            }
+            
+            const data = await response.json();
+            return data.results.slice(0, limit).map(item => ({
+                tmdbId: item.id,
+                title: item.title || item.name,
+                year: (item.release_date || item.first_air_date) 
+                    ? new Date(item.release_date || item.first_air_date).getFullYear() 
+                    : null,
+                poster: item.poster_path 
+                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.POSTER_SIZE}${item.poster_path}`
+                    : null,
+                rating: item.vote_average || 0,
+                type: mediaType
+            }));
+        } catch (error) {
+            console.error('TMDB discover by genre error:', error);
+            return [];
+        }
     }
 };
+

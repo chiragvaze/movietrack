@@ -164,6 +164,12 @@ async function loadMovies() {
             updateStats();
             renderMovies();
             loadRecommendations(); // Load recommendations after movies are loaded
+            
+            // Check for new achievements
+            const newAchievements = getNewAchievements(movies);
+            newAchievements.forEach(achievement => {
+                showAchievementUnlock(achievement);
+            });
         }
     } catch (error) {
         console.error('Error loading movies:', error);
@@ -198,99 +204,258 @@ async function loadRecommendations() {
         return;
     }
     
-    // Get user's highest-rated content with TMDB IDs
-    const highestRated = movies
-        .filter(m => m.rating >= 4 && m.tmdbId) // Only 4+ star rated items with TMDB ID
-        .sort((a, b) => b.rating - a.rating)
-        .slice(0, 5); // Top 5 highest rated
-    
-    console.log('🎯 Highest rated items for recommendations:', highestRated.map(m => ({
-        title: m.title,
-        type: m.type,
-        rating: m.rating,
-        tmdbId: m.tmdbId
-    })));
-    
-    if (highestRated.length === 0) {
+    if (movies.length === 0) {
         recommendationsSection.style.display = 'none';
         return;
     }
     
     try {
-        // Fetch recommendations for each highly-rated item
-        const allRecommendations = [];
+        // Step 1: Analyze user preferences
+        const userProfile = analyzeUserPreferences(movies);
+        console.log('👤 User Profile:', userProfile);
         
-        for (const item of highestRated) {
-            let recs;
-            console.log(`🔍 Fetching recommendations for: ${item.title} (${item.type})`);
-            if (item.type === 'tv') {
-                recs = await TMDB.getTVRecommendations(item.tmdbId, 5);
-            } else {
-                recs = await TMDB.getMovieRecommendations(item.tmdbId, 5);
-            }
-            console.log(`✅ Got ${recs.length} recommendations for ${item.title}`);
-            allRecommendations.push(...recs);
-        }
+        // Step 2: Get recommendations based on multiple strategies
+        const recommendations = await getSmartRecommendations(userProfile);
+        console.log(`✨ Generated ${recommendations.length} smart recommendations`);
         
-        console.log(`📊 Total recommendations before filtering: ${allRecommendations.length}`);
-        console.log('📊 Recommendation types:', allRecommendations.reduce((acc, rec) => {
-            acc[rec.type] = (acc[rec.type] || 0) + 1;
-            return acc;
-        }, {}));
-        
-        // Remove duplicates and items already in user's collection
-        const uniqueRecommendations = allRecommendations
-            .filter((rec, index, self) => 
-                index === self.findIndex(r => r.tmdbId === rec.tmdbId)
-            )
-            .filter(rec => 
-                !movies.some(m => m.tmdbId === rec.tmdbId)
-            )
-            .slice(0, 15); // Limit to 15 recommendations
-        
-        console.log(`✨ Final unique recommendations: ${uniqueRecommendations.length}`);
-        console.log('✨ Final types:', uniqueRecommendations.reduce((acc, rec) => {
-            acc[rec.type] = (acc[rec.type] || 0) + 1;
-            return acc;
-        }, {}));
-        
-        if (uniqueRecommendations.length === 0) {
+        if (recommendations.length === 0) {
             recommendationsSection.style.display = 'none';
             return;
         }
         
-        // Display recommendations
+        // Step 3: Display recommendations with personalized sections
+        displayRecommendations(recommendations, userProfile);
         recommendationsSection.style.display = 'block';
-        recommendationsCarousel.innerHTML = uniqueRecommendations.map(rec => `
-            <div class="recommendation-card" onclick="openRecommendationDetails('${rec.tmdbId}', '${rec.type}')">
-                <img 
-                    src="${rec.poster || 'https://via.placeholder.com/200x300?text=No+Poster'}" 
-                    alt="${rec.title}"
-                    class="recommendation-poster"
-                    onerror="this.src='https://via.placeholder.com/200x300?text=No+Poster'"
-                >
-                <div class="recommendation-info">
-                    <div class="recommendation-title">${rec.title}</div>
-                    <div class="recommendation-meta">
-                        <span class="recommendation-year">${rec.year || 'N/A'}</span>
-                        <span class="recommendation-rating">
-                            <i class="fas fa-star"></i>
-                            ${rec.rating.toFixed(1)}
-                        </span>
-                    </div>
-                    <span class="recommendation-type-badge">
-                        ${rec.type === 'tv' ? '📺 TV Show' : '🎬 Movie'}
-                    </span>
-                </div>
-            </div>
-        `).join('');
         
     } catch (error) {
         console.error('Error loading recommendations:', error);
-        if (recommendationsSection) {
-            recommendationsSection.style.display = 'none';
+        recommendationsSection.style.display = 'none';
+    }
+}
+
+/**
+ * Analyzes user's collection to build preference profile
+ */
+function analyzeUserPreferences(movies) {
+    const profile = {
+        favoriteGenres: [],
+        topRatedMovies: [],
+        avgRating: 0,
+        preferredType: null, // movie or tv
+        recentlyWatched: [],
+        totalContent: movies.length
+    };
+    
+    // Get top-rated content (4+ stars)
+    profile.topRatedMovies = movies
+        .filter(m => m.rating >= 4 && m.tmdbId)
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 5);
+    
+    // Calculate average rating
+    const ratedMovies = movies.filter(m => m.rating > 0);
+    if (ratedMovies.length > 0) {
+        profile.avgRating = ratedMovies.reduce((sum, m) => sum + m.rating, 0) / ratedMovies.length;
+    }
+    
+    // Analyze genre preferences
+    const genreCount = {};
+    movies.forEach(movie => {
+        if (movie.genre && Array.isArray(movie.genre)) {
+            movie.genre.forEach(genre => {
+                genreCount[genre] = (genreCount[genre] || 0) + 1;
+            });
+        }
+    });
+    
+    // Get top 3 genres
+    profile.favoriteGenres = Object.entries(genreCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(g => g[0]);
+    
+    // Determine preferred content type
+    const movieCount = movies.filter(m => m.type === 'movie').length;
+    const tvCount = movies.filter(m => m.type === 'tv').length;
+    profile.preferredType = movieCount > tvCount ? 'movie' : 'tv';
+    
+    // Get recently added items
+    profile.recentlyWatched = movies
+        .filter(m => m.tmdbId)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 3);
+    
+    return profile;
+}
+
+/**
+ * Gets smart recommendations using multiple strategies
+ */
+async function getSmartRecommendations(userProfile) {
+    const allRecommendations = [];
+    
+    // Strategy 1: "Because you watched..." - Similar to top-rated items
+    console.log('🎯 Strategy 1: Based on top-rated content...');
+    for (const item of userProfile.topRatedMovies) {
+        try {
+            let recs;
+            if (item.type === 'tv') {
+                recs = await TMDB.getTVRecommendations(item.tmdbId, 3);
+            } else {
+                recs = await TMDB.getMovieRecommendations(item.tmdbId, 3);
+            }
+            
+            recs.forEach(rec => {
+                rec.reason = `Because you loved "${item.title}"`;
+                rec.strategy = 'similar';
+            });
+            
+            allRecommendations.push(...recs);
+        } catch (error) {
+            console.error(`Error getting recommendations for ${item.title}:`, error);
         }
     }
+    
+    // Strategy 2: Based on favorite genres
+    console.log('🎭 Strategy 2: Based on favorite genres...');
+    if (userProfile.favoriteGenres.length > 0) {
+        try {
+            // Get genre IDs from TMDB
+            const genreMap = {
+                'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35,
+                'Crime': 80, 'Documentary': 99, 'Drama': 18, 'Family': 10751,
+                'Fantasy': 14, 'History': 36, 'Horror': 27, 'Music': 10402,
+                'Mystery': 9648, 'Romance': 10749, 'Science Fiction': 878,
+                'Thriller': 53, 'War': 10752, 'Western': 37
+            };
+            
+            const genreId = genreMap[userProfile.favoriteGenres[0]];
+            if (genreId) {
+                const genreRecs = await TMDB.discoverByGenre(
+                    userProfile.preferredType === 'movie' ? 'movie' : 'tv',
+                    genreId,
+                    5
+                );
+                
+                genreRecs.forEach(rec => {
+                    rec.reason = `You love ${userProfile.favoriteGenres[0]}`;
+                    rec.strategy = 'genre';
+                });
+                
+                allRecommendations.push(...genreRecs);
+            }
+        } catch (error) {
+            console.error('Error getting genre recommendations:', error);
+        }
+    }
+    
+    // Strategy 3: Trending in your preferred type
+    console.log('📈 Strategy 3: Trending content...');
+    try {
+        const trending = await TMDB.getTrending(userProfile.preferredType, 5);
+        trending.forEach(rec => {
+            rec.reason = 'Trending now';
+            rec.strategy = 'trending';
+        });
+        allRecommendations.push(...trending);
+    } catch (error) {
+        console.error('Error getting trending:', error);
+    }
+    
+    // Remove duplicates and items already in collection
+    const existingIds = movies.map(m => m.tmdbId).filter(Boolean);
+    const uniqueRecommendations = allRecommendations
+        .filter((rec, index, self) => 
+            index === self.findIndex(r => r.tmdbId === rec.tmdbId)
+        )
+        .filter(rec => !existingIds.includes(rec.tmdbId))
+        .slice(0, 20); // Limit to 20 total
+    
+    return uniqueRecommendations;
+}
+
+/**
+ * Displays recommendations in organized sections
+ */
+function displayRecommendations(recommendations, userProfile) {
+    const carousel = document.getElementById('recommendationsCarousel');
+    
+    // Group by strategy
+    const similarRecs = recommendations.filter(r => r.strategy === 'similar');
+    const genreRecs = recommendations.filter(r => r.strategy === 'genre');
+    const trendingRecs = recommendations.filter(r => r.strategy === 'trending');
+    
+    let html = '';
+    
+    // Section 1: Because you watched...
+    if (similarRecs.length > 0) {
+        html += `<div class="rec-section">
+            <h3 class="rec-section-title"><i class="fas fa-heart"></i> Based on Your Favorites</h3>
+            <div class="rec-grid">`;
+        
+        similarRecs.forEach(rec => {
+            html += createRecommendationCard(rec);
+        });
+        
+        html += `</div></div>`;
+    }
+    
+    // Section 2: Genre-based
+    if (genreRecs.length > 0) {
+        html += `<div class="rec-section">
+            <h3 class="rec-section-title"><i class="fas fa-theater-masks"></i> More ${userProfile.favoriteGenres[0]}</h3>
+            <div class="rec-grid">`;
+        
+        genreRecs.forEach(rec => {
+            html += createRecommendationCard(rec);
+        });
+        
+        html += `</div></div>`;
+    }
+    
+    // Section 3: Trending
+    if (trendingRecs.length > 0) {
+        html += `<div class="rec-section">
+            <h3 class="rec-section-title"><i class="fas fa-fire"></i> Trending Now</h3>
+            <div class="rec-grid">`;
+        
+        trendingRecs.forEach(rec => {
+            html += createRecommendationCard(rec);
+        });
+        
+        html += `</div></div>`;
+    }
+    
+    carousel.innerHTML = html;
+}
+
+/**
+ * Creates a recommendation card HTML
+ */
+function createRecommendationCard(rec) {
+    return `
+        <div class="recommendation-card" onclick="openRecommendationDetails('${rec.tmdbId}', '${rec.type}')">
+            <img 
+                src="${rec.poster || 'https://via.placeholder.com/200x300?text=No+Poster'}" 
+                alt="${rec.title}"
+                class="recommendation-poster"
+                onerror="this.src='https://via.placeholder.com/200x300?text=No+Poster'"
+            >
+            <div class="recommendation-overlay">
+                <div class="rec-reason">${rec.reason}</div>
+            </div>
+            <div class="recommendation-info">
+                <div class="recommendation-title">${rec.title}</div>
+                <div class="recommendation-meta">
+                    <span class="recommendation-year">${rec.year || 'N/A'}</span>
+                    <span class="recommendation-rating">
+                        <i class="fas fa-star"></i>
+                        ${rec.rating ? rec.rating.toFixed(1) : 'N/A'}
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Open recommendation details and allow quick add
@@ -1739,6 +1904,42 @@ document.addEventListener('DOMContentLoaded', () => {
         analyticsModal.addEventListener('click', (e) => {
             if (e.target === analyticsModal) {
                 closeAnalytics();
+            }
+        });
+    }
+    
+    // Achievements Sidebar Click
+    const achievementsBtn = document.getElementById('sidebarAchievements');
+    if (achievementsBtn) {
+        achievementsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            displayAchievementsModal(movies);
+            
+            // Close sidebar on mobile
+            const sidebar = document.querySelector('.sidebar');
+            if (window.innerWidth <= 768 && sidebar) {
+                sidebar.classList.remove('active');
+            }
+        });
+    }
+    
+    // Close Achievements Modal
+    const closeAchievementsBtn = document.querySelector('.close-achievements');
+    if (closeAchievementsBtn) {
+        closeAchievementsBtn.addEventListener('click', () => {
+            const modal = document.getElementById('achievementsModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        });
+    }
+    
+    // Close achievements on outside click
+    const achievementsModal = document.getElementById('achievementsModal');
+    if (achievementsModal) {
+        achievementsModal.addEventListener('click', (e) => {
+            if (e.target === achievementsModal) {
+                achievementsModal.classList.remove('show');
             }
         });
     }
