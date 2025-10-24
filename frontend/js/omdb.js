@@ -1,6 +1,6 @@
 // OMDb API Service - Fast search for slow connections
 const OMDB_CONFIG = {
-    API_KEY: 'f6136c3d', // Free OMDb API key
+    API_KEY: 'ad726c92', // Your personal OMDb API key
     BASE_URL: 'https://www.omdbapi.com',
     TIMEOUT: 8000, // 8 seconds - OMDb is much faster
     MAX_RETRIES: 1
