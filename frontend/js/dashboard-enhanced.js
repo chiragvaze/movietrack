@@ -665,36 +665,45 @@ function initTMDBSearch() {
             return;
         }
         
-        // Show loading immediately
+        // Show loading immediately with helpful message
         tmdbResults.innerHTML = `
             <div class="tmdb-loading">
-                <i class="fas fa-spinner fa-spin"></i> Searching TMDB...
+                <i class="fas fa-spinner fa-spin"></i> 
+                <div>Searching TMDB...</div>
+                <small style="opacity: 0.7; margin-top: 5px; display: block;">
+                    ${query.length < 4 ? 'Type more for better results' : 'Please wait, checking cache & server...'}
+                </small>
             </div>
         `;
         tmdbResults.style.display = 'block';
         
-        // Reduced debounce time for faster response on slow connections
+        // Reduced debounce time for faster response
         tmdbSearchTimeout = setTimeout(async () => {
             let isLoading = true;
             
-            const results = currentContentType === 'movie' 
-                ? await TMDB.searchMovies(query, (loading) => { isLoading = loading; })
-                : await TMDB.searchTVShows(query, (loading) => { isLoading = loading; });
-            
-            currentTMDBResults = results.results || [];
-            
-            // Check if results came from cache
-            if (results.fromCache) {
-                console.log('✅ Showing cached results instantly');
+            try {
+                const results = currentContentType === 'movie' 
+                    ? await TMDB.searchMovies(query, (loading) => { isLoading = loading; })
+                    : await TMDB.searchTVShows(query, (loading) => { isLoading = loading; });
+                
+                currentTMDBResults = results.results || [];
+                
+                // Check if results came from cache
+                if (results.fromCache) {
+                    console.log('✅ Showing cached results instantly');
+                }
+                
+                // Check for errors
+                if (results.error) {
+                    displayTMDBError(results.message, tmdbResults, query);
+                } else {
+                    displayTMDBResults(currentTMDBResults, tmdbResults);
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                displayTMDBError('Connection failed. Please check your internet and try again.', tmdbResults, query);
             }
-            
-            // Check for errors
-            if (results.error) {
-                displayTMDBError(results.message, tmdbResults, query);
-            } else {
-                displayTMDBResults(currentTMDBResults, tmdbResults);
-            }
-        }, 300); // Reduced from 500ms to 300ms for faster response
+        }, 400); // Increased slightly to 400ms for better debouncing
     });
 }
 
@@ -707,7 +716,7 @@ function displayTMDBError(message, container, query) {
                 <i class="fas fa-redo"></i> Retry
             </button>
             <div style="margin-top: 10px; font-size: 0.85rem; opacity: 0.8;">
-                💡 Tip: Type slowly, results are cached for 5 minutes
+                💡 Tip: Results cached for 30 min. On slow internet (100 KBps), wait up to 60 seconds. Try exact movie names.
             </div>
         </div>
     `;

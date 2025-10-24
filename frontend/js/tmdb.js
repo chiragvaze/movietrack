@@ -5,13 +5,43 @@ const TMDB_CONFIG = {
     IMAGE_BASE_URL: 'https://image.tmdb.org/t/p',
     POSTER_SIZE: 'w500',
     BACKDROP_SIZE: 'w1280',
-    TIMEOUT: 8000, // 8 seconds timeout - balanced for slow connections
-    MAX_RETRIES: 1 // Reduced to 1 retry for faster response
+    TIMEOUT: 60000, // Increased to 60 seconds (1 minute) for very slow mobile internet
+    MAX_RETRIES: 0 // No retries - just wait for the response
 };
 
 // Simple in-memory cache for search results
 const searchCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 30 * 60 * 1000; // Increased to 30 minutes for better mobile experience
+
+// Helper function to get cached data from localStorage
+function getCachedSearch(cacheKey) {
+    try {
+        const cached = localStorage.getItem(`tmdb_${cacheKey}`);
+        if (cached) {
+            const data = JSON.parse(cached);
+            if (Date.now() - data.timestamp < CACHE_DURATION) {
+                return data.results;
+            }
+            // Remove expired cache
+            localStorage.removeItem(`tmdb_${cacheKey}`);
+        }
+    } catch (e) {
+        console.error('Cache read error:', e);
+    }
+    return null;
+}
+
+// Helper function to save search results to localStorage
+function saveCachedSearch(cacheKey, results) {
+    try {
+        localStorage.setItem(`tmdb_${cacheKey}`, JSON.stringify({
+            results,
+            timestamp: Date.now()
+        }));
+    } catch (e) {
+        console.error('Cache save error:', e);
+    }
+}
 
 // Helper function for fetch with timeout and retry
 async function fetchWithTimeout(url, options = {}, timeout = TMDB_CONFIG.TIMEOUT, retries = TMDB_CONFIG.MAX_RETRIES) {
@@ -47,11 +77,19 @@ const TMDB = {
             return { results: [], loading: false };
         }
         
-        // Check cache first
         const cacheKey = `movie_${query.toLowerCase()}`;
+        
+        // Check localStorage cache first (persists across page reloads)
+        const localCached = getCachedSearch(cacheKey);
+        if (localCached) {
+            console.log('📦 Returning localStorage cached results for:', query);
+            return { ...localCached, fromCache: true, loading: false };
+        }
+        
+        // Check memory cache
         const cached = searchCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-            console.log('📦 Returning cached results for:', query);
+            console.log('📦 Returning memory cached results for:', query);
             return { ...cached.data, fromCache: true };
         }
         
@@ -70,15 +108,17 @@ const TMDB = {
             }
             
             const data = await response.json();
+            const result = { ...data, loading: false };
             
-            // Cache the results
+            // Cache in both memory and localStorage
             searchCache.set(cacheKey, {
-                data: { ...data, loading: false },
+                data: result,
                 timestamp: Date.now()
             });
+            saveCachedSearch(cacheKey, result);
             
             if (onLoading) onLoading(false);
-            return { ...data, loading: false };
+            return result;
         } catch (error) {
             console.error('TMDB search error:', error);
             if (onLoading) onLoading(false);
@@ -89,7 +129,7 @@ const TMDB = {
                 loading: false,
                 error: error.name === 'AbortError' ? 'timeout' : 'network',
                 message: error.name === 'AbortError' 
-                    ? 'Slow connection detected. Try typing slower or check your internet.' 
+                    ? 'Still loading... Your connection is very slow. Results are cached for 30 minutes.' 
                     : 'Network error. Please try again.'
             };
         }
@@ -101,11 +141,19 @@ const TMDB = {
             return { results: [], loading: false };
         }
         
-        // Check cache first
         const cacheKey = `tv_${query.toLowerCase()}`;
+        
+        // Check localStorage cache first
+        const localCached = getCachedSearch(cacheKey);
+        if (localCached) {
+            console.log('📦 Returning localStorage cached results for:', query);
+            return { ...localCached, fromCache: true, loading: false };
+        }
+        
+        // Check memory cache
         const cached = searchCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-            console.log('📦 Returning cached results for:', query);
+            console.log('📦 Returning memory cached results for:', query);
             return { ...cached.data, fromCache: true };
         }
         
@@ -124,15 +172,17 @@ const TMDB = {
             }
             
             const data = await response.json();
+            const result = { ...data, loading: false };
             
-            // Cache the results
+            // Cache in both memory and localStorage
             searchCache.set(cacheKey, {
-                data: { ...data, loading: false },
+                data: result,
                 timestamp: Date.now()
             });
+            saveCachedSearch(cacheKey, result);
             
             if (onLoading) onLoading(false);
-            return { ...data, loading: false };
+            return result;
         } catch (error) {
             console.error('TMDB TV search error:', error);
             if (onLoading) onLoading(false);
@@ -142,7 +192,7 @@ const TMDB = {
                 loading: false,
                 error: error.name === 'AbortError' ? 'timeout' : 'network',
                 message: error.name === 'AbortError' 
-                    ? 'Request timed out. Please check your connection.' 
+                    ? 'Still loading... Your connection is very slow. Results are cached for 30 minutes.' 
                     : 'Network error. Please try again.'
             };
         }
