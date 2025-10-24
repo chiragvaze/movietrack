@@ -4,18 +4,49 @@ const TMDB_CONFIG = {
     BASE_URL: 'https://api.themoviedb.org/3',
     IMAGE_BASE_URL: 'https://image.tmdb.org/t/p',
     POSTER_SIZE: 'w500',
-    BACKDROP_SIZE: 'w1280'
+    BACKDROP_SIZE: 'w1280',
+    TIMEOUT: 10000, // 10 seconds timeout
+    MAX_RETRIES: 2
 };
 
+// Helper function for fetch with timeout and retry
+async function fetchWithTimeout(url, options = {}, timeout = TMDB_CONFIG.TIMEOUT, retries = TMDB_CONFIG.MAX_RETRIES) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            
+            // If it's the last retry or not a network error, throw
+            if (i === retries || error.name !== 'AbortError') {
+                throw error;
+            }
+            
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        }
+    }
+}
+
 const TMDB = {
-    // Search movies
-    async searchMovies(query) {
+    // Search movies with loading state
+    async searchMovies(query, onLoading = null) {
         if (!query || query.trim().length < 2) {
-            return { results: [] };
+            return { results: [], loading: false };
         }
         
         try {
-            const response = await fetch(
+            if (onLoading) onLoading(true);
+            
+            const response = await fetchWithTimeout(
                 `${TMDB_CONFIG.BASE_URL}/search/movie?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`
             );
             
@@ -24,21 +55,34 @@ const TMDB = {
             }
             
             const data = await response.json();
-            return data;
+            if (onLoading) onLoading(false);
+            return { ...data, loading: false };
         } catch (error) {
             console.error('TMDB search error:', error);
-            return { results: [] };
+            if (onLoading) onLoading(false);
+            
+            // Return error info so UI can show appropriate message
+            return { 
+                results: [], 
+                loading: false,
+                error: error.name === 'AbortError' ? 'timeout' : 'network',
+                message: error.name === 'AbortError' 
+                    ? 'Request timed out. Please check your connection.' 
+                    : 'Network error. Please try again.'
+            };
         }
     },
     
-    // Search TV shows
-    async searchTVShows(query) {
+    // Search TV shows with loading state
+    async searchTVShows(query, onLoading = null) {
         if (!query || query.trim().length < 2) {
-            return { results: [] };
+            return { results: [], loading: false };
         }
         
         try {
-            const response = await fetch(
+            if (onLoading) onLoading(true);
+            
+            const response = await fetchWithTimeout(
                 `${TMDB_CONFIG.BASE_URL}/search/tv?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`
             );
             
@@ -47,17 +91,27 @@ const TMDB = {
             }
             
             const data = await response.json();
-            return data;
+            if (onLoading) onLoading(false);
+            return { ...data, loading: false };
         } catch (error) {
             console.error('TMDB TV search error:', error);
-            return { results: [] };
+            if (onLoading) onLoading(false);
+            
+            return { 
+                results: [], 
+                loading: false,
+                error: error.name === 'AbortError' ? 'timeout' : 'network',
+                message: error.name === 'AbortError' 
+                    ? 'Request timed out. Please check your connection.' 
+                    : 'Network error. Please try again.'
+            };
         }
     },
     
     // Get movie details
     async getMovieDetails(tmdbId) {
         try {
-            const response = await fetch(
+            const response = await fetchWithTimeout(
                 `${TMDB_CONFIG.BASE_URL}/movie/${tmdbId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US&append_to_response=credits`
             );
             
@@ -69,6 +123,13 @@ const TMDB = {
             return this.formatMovieData(data);
         } catch (error) {
             console.error('TMDB details error:', error);
+            
+            // Show user-friendly error message
+            if (error.name === 'AbortError') {
+                alert('⚠️ Request timed out. Please check your internet connection and try again.');
+            } else {
+                alert('⚠️ Failed to load movie details. Please try again.');
+            }
             return null;
         }
     },
@@ -76,7 +137,7 @@ const TMDB = {
     // Get TV show details
     async getTVShowDetails(tmdbId) {
         try {
-            const response = await fetch(
+            const response = await fetchWithTimeout(
                 `${TMDB_CONFIG.BASE_URL}/tv/${tmdbId}?api_key=${TMDB_CONFIG.API_KEY}&language=en-US&append_to_response=credits`
             );
             
@@ -103,6 +164,13 @@ const TMDB = {
             return this.formatTVShowData(data, seasonDetails);
         } catch (error) {
             console.error('TMDB TV details error:', error);
+            
+            // Show user-friendly error message
+            if (error.name === 'AbortError') {
+                alert('⚠️ Request timed out. Please check your internet connection and try again.');
+            } else {
+                alert('⚠️ Failed to load TV show details. Please try again.');
+            }
             return null;
         }
     },

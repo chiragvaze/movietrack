@@ -665,19 +665,63 @@ function initTMDBSearch() {
             return;
         }
         
+        // Show loading immediately
+        tmdbResults.innerHTML = `
+            <div class="tmdb-loading">
+                <i class="fas fa-spinner fa-spin"></i> Searching...
+            </div>
+        `;
+        tmdbResults.style.display = 'block';
+        
         tmdbSearchTimeout = setTimeout(async () => {
+            let isLoading = true;
+            
             const results = currentContentType === 'movie' 
-                ? await TMDB.searchMovies(query)
-                : await TMDB.searchTVShows(query);
+                ? await TMDB.searchMovies(query, (loading) => { isLoading = loading; })
+                : await TMDB.searchTVShows(query, (loading) => { isLoading = loading; });
+            
             currentTMDBResults = results.results || [];
-            displayTMDBResults(currentTMDBResults, tmdbResults);
+            
+            // Check for errors
+            if (results.error) {
+                displayTMDBError(results.message, tmdbResults, query);
+            } else {
+                displayTMDBResults(currentTMDBResults, tmdbResults);
+            }
         }, 500);
     });
 }
 
+function displayTMDBError(message, container, query) {
+    container.innerHTML = `
+        <div class="tmdb-error">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>${message}</span>
+            <button class="btn-retry" onclick="retryTMDBSearch('${query}')">
+                <i class="fas fa-redo"></i> Retry
+            </button>
+        </div>
+    `;
+    container.style.display = 'block';
+}
+
+function retryTMDBSearch(query) {
+    const titleInput = document.getElementById('movieTitle');
+    if (titleInput) {
+        titleInput.value = query;
+        titleInput.dispatchEvent(new Event('input'));
+    }
+}
+
 function displayTMDBResults(results, container) {
     if (results.length === 0) {
-        container.style.display = 'none';
+        container.innerHTML = `
+            <div class="tmdb-no-results">
+                <i class="fas fa-film"></i>
+                <span>No results found. Try different keywords.</span>
+            </div>
+        `;
+        container.style.display = 'block';
         return;
     }
     

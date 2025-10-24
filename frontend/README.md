@@ -1,4 +1,4 @@
-# Movie Tracker - Frontend v2.3.0
+# Movie Tracker - Frontend v2.3.1
 
 A simple, elegant movie tracking application built with **Vanilla JavaScript, HTML5, and CSS3**.
 
