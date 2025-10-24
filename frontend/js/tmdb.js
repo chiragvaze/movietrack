@@ -5,13 +5,13 @@ const TMDB_CONFIG = {
     IMAGE_BASE_URL: 'https://image.tmdb.org/t/p',
     POSTER_SIZE: 'w500',
     BACKDROP_SIZE: 'w1280',
-    TIMEOUT: 60000, // Increased to 60 seconds (1 minute) for very slow mobile internet
-    MAX_RETRIES: 0 // No retries - just wait for the response
+    TIMEOUT: 30000, // 30 seconds - within browser limits
+    MAX_RETRIES: 2 // Try 3 times total (initial + 2 retries) for slow connections
 };
 
 // Simple in-memory cache for search results
 const searchCache = new Map();
-const CACHE_DURATION = 30 * 60 * 1000; // Increased to 30 minutes for better mobile experience
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for better mobile experience
 
 // Helper function to get cached data from localStorage
 function getCachedSearch(cacheKey) {
@@ -44,12 +44,18 @@ function saveCachedSearch(cacheKey, results) {
 }
 
 // Helper function for fetch with timeout and retry
-async function fetchWithTimeout(url, options = {}, timeout = TMDB_CONFIG.TIMEOUT, retries = TMDB_CONFIG.MAX_RETRIES) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+async function fetchWithTimeout(url, options = {}, timeout = TMDB_CONFIG.TIMEOUT, retries = TMDB_CONFIG.MAX_RETRIES, onRetry = null) {
+    let lastError = null;
     
     for (let i = 0; i <= retries; i++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
         try {
+            if (i > 0 && onRetry) {
+                onRetry(i, retries + 1); // Notify about retry attempt
+            }
+            
             const response = await fetch(url, {
                 ...options,
                 signal: controller.signal
@@ -58,21 +64,26 @@ async function fetchWithTimeout(url, options = {}, timeout = TMDB_CONFIG.TIMEOUT
             return response;
         } catch (error) {
             clearTimeout(timeoutId);
+            lastError = error;
             
-            // If it's the last retry or not a network error, throw
-            if (i === retries || error.name !== 'AbortError') {
+            // If it's the last retry, throw the error
+            if (i === retries) {
                 throw error;
             }
             
-            // Wait before retrying (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+            // Wait before retrying (progressive delay: 2s, 4s)
+            const delay = Math.min(2000 * Math.pow(2, i), 5000);
+            console.log(`Retry ${i + 1}/${retries + 1} after ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
+    
+    throw lastError;
 }
 
 const TMDB = {
     // Search movies with loading state and caching
-    async searchMovies(query, onLoading = null) {
+    async searchMovies(query, onLoading = null, onRetry = null) {
         if (!query || query.trim().length < 2) {
             return { results: [], loading: false };
         }
@@ -100,7 +111,8 @@ const TMDB = {
                 `${TMDB_CONFIG.BASE_URL}/search/movie?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`,
                 {},
                 TMDB_CONFIG.TIMEOUT,
-                TMDB_CONFIG.MAX_RETRIES
+                TMDB_CONFIG.MAX_RETRIES,
+                onRetry // Pass retry callback
             );
             
             if (!response.ok) {
@@ -129,14 +141,14 @@ const TMDB = {
                 loading: false,
                 error: error.name === 'AbortError' ? 'timeout' : 'network',
                 message: error.name === 'AbortError' 
-                    ? 'Still loading... Your connection is very slow. Results are cached for 30 minutes.' 
-                    : 'Network error. Please try again.'
+                    ? 'Connection timeout after 3 attempts. Check your internet connection.' 
+                    : 'Network error. Please check your connection and try again.'
             };
         }
     },
     
     // Search TV shows with loading state and caching
-    async searchTVShows(query, onLoading = null) {
+    async searchTVShows(query, onLoading = null, onRetry = null) {
         if (!query || query.trim().length < 2) {
             return { results: [], loading: false };
         }
@@ -164,7 +176,8 @@ const TMDB = {
                 `${TMDB_CONFIG.BASE_URL}/search/tv?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`,
                 {},
                 TMDB_CONFIG.TIMEOUT,
-                TMDB_CONFIG.MAX_RETRIES
+                TMDB_CONFIG.MAX_RETRIES,
+                onRetry // Pass retry callback
             );
             
             if (!response.ok) {
@@ -192,8 +205,8 @@ const TMDB = {
                 loading: false,
                 error: error.name === 'AbortError' ? 'timeout' : 'network',
                 message: error.name === 'AbortError' 
-                    ? 'Still loading... Your connection is very slow. Results are cached for 30 minutes.' 
-                    : 'Network error. Please try again.'
+                    ? 'Connection timeout after 3 attempts. Check your internet connection.' 
+                    : 'Network error. Please check your connection and try again.'
             };
         }
     },

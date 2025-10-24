@@ -1,6 +1,6 @@
-# Movie Tracker - Frontend v2.3.1
+# Movie Tracker - Frontend v2.4.0 (Hybrid API)
 
-A simple, elegant movie tracking application built with **Vanilla JavaScript, HTML5, and CSS3**.
+A simple, elegant movie tracking application built with **Vanilla JavaScript, HTML5, and CSS3**. Features **Hybrid API System** using OMDb for lightning-fast search and TMDB for trending & recommendations!
 
 ## 🚀 Features
 

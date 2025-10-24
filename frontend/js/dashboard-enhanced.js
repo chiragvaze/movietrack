@@ -669,28 +669,29 @@ function initTMDBSearch() {
         tmdbResults.innerHTML = `
             <div class="tmdb-loading">
                 <i class="fas fa-spinner fa-spin"></i> 
-                <div>Searching TMDB...</div>
+                <div>Searching OMDb (Fast Mode)...</div>
                 <small style="opacity: 0.7; margin-top: 5px; display: block;">
-                    ${query.length < 4 ? 'Type more for better results' : 'Please wait, checking cache & server...'}
+                    ${query.length < 4 ? 'Type more for better results' : 'Optimized for slow connections ⚡'}
                 </small>
             </div>
         `;
         tmdbResults.style.display = 'block';
         
-        // Reduced debounce time for faster response
+        // Reduced debounce time for faster response (OMDb is much faster!)
         tmdbSearchTimeout = setTimeout(async () => {
             let isLoading = true;
             
             try {
+                // Use OMDb for fast search (works great on slow connections)
                 const results = currentContentType === 'movie' 
-                    ? await TMDB.searchMovies(query, (loading) => { isLoading = loading; })
-                    : await TMDB.searchTVShows(query, (loading) => { isLoading = loading; });
+                    ? await OMDb.searchMovies(query, (loading) => { isLoading = loading; })
+                    : await OMDb.searchTVShows(query, (loading) => { isLoading = loading; });
                 
                 currentTMDBResults = results.results || [];
                 
                 // Check if results came from cache
                 if (results.fromCache) {
-                    console.log('✅ Showing cached results instantly');
+                    console.log('✅ OMDb: Showing cached results instantly');
                 }
                 
                 // Check for errors
@@ -700,10 +701,10 @@ function initTMDBSearch() {
                     displayTMDBResults(currentTMDBResults, tmdbResults);
                 }
             } catch (error) {
-                console.error('Search error:', error);
+                console.error('OMDb search error:', error);
                 displayTMDBError('Connection failed. Please check your internet and try again.', tmdbResults, query);
             }
-        }, 400); // Increased slightly to 400ms for better debouncing
+        }, 300); // Faster debounce since OMDb is much quicker
     });
 }
 
@@ -716,7 +717,7 @@ function displayTMDBError(message, container, query) {
                 <i class="fas fa-redo"></i> Retry
             </button>
             <div style="margin-top: 10px; font-size: 0.85rem; opacity: 0.8;">
-                💡 Tip: Results cached for 30 min. On slow internet (100 KBps), wait up to 60 seconds. Try exact movie names.
+                💡 Tip: Using OMDb for faster search on slow connections. Results cached for 30 min.
             </div>
         </div>
     `;
@@ -746,9 +747,10 @@ function displayTMDBResults(results, container) {
     const isTV = currentContentType === 'tv';
     
     container.innerHTML = results.slice(0, 5).map((item, index) => {
-        const title = isTV ? item.name : item.title;
-        const date = isTV ? item.first_air_date : item.release_date;
-        const year = date ? new Date(date).getFullYear() : 'N/A';
+        // Handle both OMDb and TMDB formats
+        const title = isTV ? (item.name || item.title) : item.title;
+        const year = item.year || (item.release_date ? new Date(item.release_date).getFullYear() : 
+                     (item.first_air_date ? new Date(item.first_air_date).getFullYear() : 'N/A'));
         const icon = isTV ? '📺' : '🎬';
         
         return `
@@ -763,17 +765,30 @@ function displayTMDBResults(results, container) {
 
 async function selectTMDBMovie(index) {
     const selectedItem = currentTMDBResults[index];
-    console.log('Selected from TMDB:', selectedItem);
+    console.log('Selected from OMDb:', selectedItem);
     
     const isTV = currentContentType === 'tv';
-    const details = isTV 
-        ? await TMDB.getTVShowDetails(selectedItem.id)
-        : await TMDB.getMovieDetails(selectedItem.id);
     
-    console.log(`${isTV ? 'TV Show' : 'Movie'} details from TMDB:`, details);
+    // Check if this is OMDb data (has imdbID) or TMDB data (numeric id)
+    const isOMDb = selectedItem.id && selectedItem.id.startsWith('tt');
+    
+    let details;
+    if (isOMDb) {
+        // Fetch full details from OMDb using IMDb ID
+        details = isTV 
+            ? await OMDb.getTVShowDetails(selectedItem.id)
+            : await OMDb.getMovieDetails(selectedItem.id);
+        console.log(`${isTV ? 'TV Show' : 'Movie'} details from OMDb:`, details);
+    } else {
+        // Fallback to TMDB if needed (for trending/recommendations)
+        details = isTV 
+            ? await TMDB.getTVShowDetails(selectedItem.id)
+            : await TMDB.getMovieDetails(selectedItem.id);
+        console.log(`${isTV ? 'TV Show' : 'Movie'} details from TMDB:`, details);
+    }
     
     if (details) {
-        document.getElementById('movieTitle').value = details.title;
+        document.getElementById('movieTitle').value = details.title || details.name;
         document.getElementById('movieYear').value = details.year || '';
         document.getElementById('tmdbResults').style.display = 'none';
         
@@ -783,9 +798,9 @@ async function selectTMDBMovie(index) {
             tvShowFields.style.display = 'block';
         }
         
-        // Store TMDB data for when form is submitted
+        // Store data for when form is submitted
         window.selectedTMDBData = details;
-        console.log('Stored TMDB data:', window.selectedTMDBData);
+        console.log('Stored movie/TV data:', window.selectedTMDBData);
     }
 }
 
