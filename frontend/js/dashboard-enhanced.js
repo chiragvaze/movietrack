@@ -798,6 +798,23 @@ async function selectTMDBMovie(index) {
             tvShowFields.style.display = 'block';
         }
         
+        // Transform OMDb data to match backend schema
+        if (isOMDb) {
+            // Convert runtime "162 min" -> 162 (number)
+            if (details.runtime && typeof details.runtime === 'string') {
+                details.runtime = parseInt(details.runtime.replace(/\D/g, '')) || null;
+            }
+            
+            // Convert IMDb rating (0-10) to app rating (0-5)
+            if (details.imdbRating && typeof details.imdbRating === 'string') {
+                const imdbScore = parseFloat(details.imdbRating);
+                details.rating = Math.round((imdbScore / 10) * 5 * 10) / 10; // Convert 10-scale to 5-scale
+            }
+            
+            // Store original IMDb rating separately
+            details.imdbRatingOriginal = details.imdbRating;
+        }
+        
         // Store data for when form is submitted
         window.selectedTMDBData = details;
         console.log('Stored movie/TV data:', window.selectedTMDBData);
