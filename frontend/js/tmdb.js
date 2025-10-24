@@ -5,9 +5,13 @@ const TMDB_CONFIG = {
     IMAGE_BASE_URL: 'https://image.tmdb.org/t/p',
     POSTER_SIZE: 'w500',
     BACKDROP_SIZE: 'w1280',
-    TIMEOUT: 10000, // 10 seconds timeout
-    MAX_RETRIES: 2
+    TIMEOUT: 8000, // 8 seconds timeout - balanced for slow connections
+    MAX_RETRIES: 1 // Reduced to 1 retry for faster response
 };
+
+// Simple in-memory cache for search results
+const searchCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Helper function for fetch with timeout and retry
 async function fetchWithTimeout(url, options = {}, timeout = TMDB_CONFIG.TIMEOUT, retries = TMDB_CONFIG.MAX_RETRIES) {
@@ -37,17 +41,28 @@ async function fetchWithTimeout(url, options = {}, timeout = TMDB_CONFIG.TIMEOUT
 }
 
 const TMDB = {
-    // Search movies with loading state
+    // Search movies with loading state and caching
     async searchMovies(query, onLoading = null) {
         if (!query || query.trim().length < 2) {
             return { results: [], loading: false };
+        }
+        
+        // Check cache first
+        const cacheKey = `movie_${query.toLowerCase()}`;
+        const cached = searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+            console.log('📦 Returning cached results for:', query);
+            return { ...cached.data, fromCache: true };
         }
         
         try {
             if (onLoading) onLoading(true);
             
             const response = await fetchWithTimeout(
-                `${TMDB_CONFIG.BASE_URL}/search/movie?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`
+                `${TMDB_CONFIG.BASE_URL}/search/movie?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`,
+                {},
+                TMDB_CONFIG.TIMEOUT,
+                TMDB_CONFIG.MAX_RETRIES
             );
             
             if (!response.ok) {
@@ -55,6 +70,13 @@ const TMDB = {
             }
             
             const data = await response.json();
+            
+            // Cache the results
+            searchCache.set(cacheKey, {
+                data: { ...data, loading: false },
+                timestamp: Date.now()
+            });
+            
             if (onLoading) onLoading(false);
             return { ...data, loading: false };
         } catch (error) {
@@ -67,23 +89,34 @@ const TMDB = {
                 loading: false,
                 error: error.name === 'AbortError' ? 'timeout' : 'network',
                 message: error.name === 'AbortError' 
-                    ? 'Request timed out. Please check your connection.' 
+                    ? 'Slow connection detected. Try typing slower or check your internet.' 
                     : 'Network error. Please try again.'
             };
         }
     },
     
-    // Search TV shows with loading state
+    // Search TV shows with loading state and caching
     async searchTVShows(query, onLoading = null) {
         if (!query || query.trim().length < 2) {
             return { results: [], loading: false };
+        }
+        
+        // Check cache first
+        const cacheKey = `tv_${query.toLowerCase()}`;
+        const cached = searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+            console.log('📦 Returning cached results for:', query);
+            return { ...cached.data, fromCache: true };
         }
         
         try {
             if (onLoading) onLoading(true);
             
             const response = await fetchWithTimeout(
-                `${TMDB_CONFIG.BASE_URL}/search/tv?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`
+                `${TMDB_CONFIG.BASE_URL}/search/tv?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`,
+                {},
+                TMDB_CONFIG.TIMEOUT,
+                TMDB_CONFIG.MAX_RETRIES
             );
             
             if (!response.ok) {
@@ -91,6 +124,13 @@ const TMDB = {
             }
             
             const data = await response.json();
+            
+            // Cache the results
+            searchCache.set(cacheKey, {
+                data: { ...data, loading: false },
+                timestamp: Date.now()
+            });
+            
             if (onLoading) onLoading(false);
             return { ...data, loading: false };
         } catch (error) {

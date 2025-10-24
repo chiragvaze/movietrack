@@ -1163,7 +1163,7 @@ function showReportBug() {
                 <div>
                     <strong style="color: var(--text-primary);">3. Quick Info</strong>
                     <p style="color: var(--text-secondary); margin: 5px 0 0 20px;">
-                        Version: 2.3.0<br>
+                        Version: 2.3.1<br>
                         Browser: ${navigator.userAgent}<br>
                         Current Page: ${window.location.pathname}
                     </p>

@@ -668,11 +668,12 @@ function initTMDBSearch() {
         // Show loading immediately
         tmdbResults.innerHTML = `
             <div class="tmdb-loading">
-                <i class="fas fa-spinner fa-spin"></i> Searching...
+                <i class="fas fa-spinner fa-spin"></i> Searching TMDB...
             </div>
         `;
         tmdbResults.style.display = 'block';
         
+        // Reduced debounce time for faster response on slow connections
         tmdbSearchTimeout = setTimeout(async () => {
             let isLoading = true;
             
@@ -682,13 +683,18 @@ function initTMDBSearch() {
             
             currentTMDBResults = results.results || [];
             
+            // Check if results came from cache
+            if (results.fromCache) {
+                console.log('✅ Showing cached results instantly');
+            }
+            
             // Check for errors
             if (results.error) {
                 displayTMDBError(results.message, tmdbResults, query);
             } else {
                 displayTMDBResults(currentTMDBResults, tmdbResults);
             }
-        }, 500);
+        }, 300); // Reduced from 500ms to 300ms for faster response
     });
 }
 
@@ -700,6 +706,9 @@ function displayTMDBError(message, container, query) {
             <button class="btn-retry" onclick="retryTMDBSearch('${query}')">
                 <i class="fas fa-redo"></i> Retry
             </button>
+            <div style="margin-top: 10px; font-size: 0.85rem; opacity: 0.8;">
+                💡 Tip: Type slowly, results are cached for 5 minutes
+            </div>
         </div>
     `;
     container.style.display = 'block';
