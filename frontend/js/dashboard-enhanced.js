@@ -1542,6 +1542,17 @@ if (logoutBtn) {
     });
 }
 
+// Profile Modal Logout Button
+const profileLogoutBtn = document.getElementById('profileLogoutBtn');
+if (profileLogoutBtn) {
+    profileLogoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm('Are you sure you want to logout?')) {
+            API.logout();
+        }
+    });
+}
+
 // ===== Theme Toggle Functionality =====
 function initThemeToggle() {
     const themeToggleBtn = document.getElementById('themeToggleBtn');
