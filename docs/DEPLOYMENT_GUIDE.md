@@ -16,7 +16,8 @@
 Before deploying, ensure you have:
 - ✅ Git installed and project pushed to GitHub
 - ✅ MongoDB Atlas account (already configured)
-- ✅ TMDB API key (already have: `409d37969fa9cdbc46f0baf72ff9c6d2`)
+- ✅ OMDb API key (get from http://www.omdbapi.com/)
+- ✅ TMDB API key (get from https://www.themoviedb.org/)
 - ✅ Accounts on deployment platforms (free tier available)
 
 ---
