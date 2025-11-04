@@ -248,7 +248,383 @@ if (isOMDb) {
 }
 ```
 
-### 2. `frontend/js/omdb.js` (299 lines) - NEW in v2.4.0
+---
+
+## 🎬 Categories Page Enhancement (v2.4.1)
+
+### 1. `frontend/js/categories.js` (831 lines) - ENHANCED in v2.4.1
+**Categories Browsing with Direct Movie Management**
+
+**Purpose:** Browse movies/TV shows by genre and add directly to watchlists without leaving the page.
+
+**Key Features Added (v2.4.1):**
+- ✅ **Action Buttons** - Watched, Watching, Watchlist buttons on every card
+- ✅ **Direct TMDB Fetch** - Complete movie details fetched directly from TMDB API
+- ✅ **Toast Notifications** - Real-time success/error feedback
+- ✅ **Load More Pagination** - 20 items per page with pagination
+- ✅ **Mobile Responsive** - 2-column grid optimized for mobile devices
+
+**Main Function - Add to List (Lines 730-831):**
+```javascript
+window.addToList = async function(listType, tmdbId, mediaType, itemDataStr) {
+    try {
+        showNotification('Adding to list...', 'info');
+        
+        // Get auth token
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showNotification('Please login first', 'error');
+            return;
+        }
+        
+        // Fetch complete details from TMDB API directly
+        const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
+        const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=credits`;
+        const response = await fetch(tmdbUrl);
+        const tmdbData = await response.json();
+        
+        // Extract comprehensive movie details
+        const director = mediaType === 'movie' 
+            ? tmdbData.credits?.crew?.find(c => c.job === 'Director')?.name || 'N/A'
+            : tmdbData.created_by?.[0]?.name || 'N/A';
+            
+        const cast = tmdbData.credits?.cast?.slice(0, 5).map(c => c.name).join(', ') || 'N/A';
+        const genres = tmdbData.genres?.map(g => g.name).join(', ') || 'N/A';
+        const runtime = mediaType === 'movie' ? tmdbData.runtime || 0 : tmdbData.episode_run_time?.[0] || 0;
+        const plot = tmdbData.overview || 'No plot available';
+        
+        // TV Show specific data
+        const seasons = mediaType === 'tv' ? tmdbData.number_of_seasons || 0 : 0;
+        const episodes = mediaType === 'tv' ? tmdbData.number_of_episodes || 0 : 0;
+        
+        // Rating conversion: TMDB 0-10 scale → App 0-5 scale
+        const tmdbRating = tmdbData.vote_average || 0;
+        const convertedRating = tmdbRating / 2;  // 7.1 → 3.55
+        
+        // Prepare movie data for backend
+        const movieData = {
+            title: tmdbData.title || tmdbData.name,
+            year: mediaType === 'movie' 
+                ? tmdbData.release_date?.split('-')[0] || 'N/A'
+                : tmdbData.first_air_date?.split('-')[0] || 'N/A',
+            poster: `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`,
+            rating: convertedRating,  // Converted to 0-5 scale
+            userRating: 0,  // User hasn't rated yet
+            genre: genres,
+            plot: plot,
+            director: director,
+            actors: cast,
+            runtime: runtime,
+            imdbId: tmdbData.imdb_id || tmdbId.toString(),
+            type: mediaType === 'tv' ? 'series' : 'movie',
+            status: listType,  // 'watched', 'watching', or 'watchlist'
+            seasons: seasons,
+            episodes: episodes
+        };
+        
+        // Send to backend API
+        const apiResponse = await fetch(`${API_URL}/api/movies`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(movieData)
+        });
+        
+        const result = await apiResponse.json();
+        
+        if (!apiResponse.ok) {
+            throw new Error(result.error || 'Failed to add movie');
+        }
+        
+        showNotification(`Added to ${listType}!`, 'success');
+        
+    } catch (error) {
+        console.error('Error adding to list:', error);
+        showNotification(error.message || 'Failed to add to list. Please try again.', 'error');
+    }
+};
+```
+
+**Action Buttons HTML (Lines 275-330):**
+```javascript
+// Render action buttons on each movie card
+<div class="action-buttons">
+    <button class="action-btn watched-btn" 
+            onclick="addToList('watched', ${item.id}, '${type}', '${itemDataStr}')">
+        <i class="fas fa-check"></i> Watched
+    </button>
+    <button class="action-btn watching-btn" 
+            onclick="addToList('watching', ${item.id}, '${type}', '${itemDataStr}')">
+        <i class="fas fa-eye"></i> Watching
+    </button>
+    <button class="action-btn watchlist-btn" 
+            onclick="addToList('watchlist', ${item.id}, '${type}', '${itemDataStr}')">
+        <i class="fas fa-bookmark"></i> Watchlist
+    </button>
+</div>
+```
+
+**Key Technical Decisions:**
+1. **Direct TMDB Fetch:** Bypasses OMDB for complete data (cast, director, runtime, plot)
+2. **Rating Conversion:** TMDB uses 0-10, backend validates 0-5, so divide by 2
+3. **User Rating 0:** New additions start unrated, user can rate later in dashboard
+4. **API Endpoint:** Uses `/api/movies` (not `/movies`) to match backend routes
+5. **Token Auth:** Requires JWT token from localStorage for authenticated requests
+
+### 2. `frontend/css/styles.css` - ENHANCED in v2.4.1
+**Total Lines:** 7104 (increased from 5270)
+
+**New Sections Added:**
+
+**Action Buttons Styles (Lines 3933-4130):**
+```css
+/* Action buttons container - hidden by default, show on hover */
+.action-buttons {
+    display: none;
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 5px;
+    z-index: 10;
+}
+
+.movie-card:hover .action-buttons {
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+/* Individual action button styles */
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Color-coded buttons */
+.watched-btn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.watching-btn {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.watchlist-btn {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: #000;
+}
+
+/* Hover effects with scale and shadow */
+.action-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Ripple effect on click */
+.action-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.action-btn:active::after {
+    width: 300px;
+    height: 300px;
+}
+```
+
+**Toast Notification System (Lines 4130-4280):**
+```css
+/* Fixed notification container at top-right */
+.notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
+}
+
+/* Notification types */
+.notification.success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.notification.error {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.notification.info {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+}
+
+/* Slide animations */
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+```
+
+**Mobile Responsive Design (Lines 4650-4780):**
+```css
+/* Mobile optimization for small screens */
+@media (max-width: 768px) {
+    /* 2-column grid layout */
+    .results-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px;
+        padding: 0 10px;
+    }
+    
+    /* Smaller movie cards */
+    .movie-card {
+        height: auto;
+    }
+    
+    .movie-poster {
+        height: 140px;
+        object-fit: cover;
+    }
+    
+    /* Always show action buttons on mobile */
+    .action-buttons {
+        display: flex !important;
+        flex-direction: column;
+        position: relative;
+        margin-top: 8px;
+        gap: 6px;
+    }
+    
+    /* Smaller buttons for mobile */
+    .action-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    
+    /* Full-width notifications on mobile */
+    .notification {
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+    }
+}
+```
+
+### 3. Technical Integration Points
+
+**Backend API Endpoint (`/api/movies` POST):**
+```javascript
+// Required headers
+Authorization: Bearer ${JWT_TOKEN}
+Content-Type: application/json
+
+// Required fields
+{
+    title: String,
+    status: 'watched' | 'watching' | 'watchlist',  // Required
+    type: 'movie' | 'series',
+    year: String,
+    poster: String (URL),
+    rating: Number (0-5),  // IMPORTANT: Backend validates max 5
+    userRating: Number (0-5),
+    genre: String,
+    plot: String,
+    director: String,
+    actors: String (comma-separated),
+    runtime: Number (minutes),
+    imdbId: String,
+    seasons: Number (for TV shows),
+    episodes: Number (for TV shows)
+}
+```
+
+**TMDB API Integration:**
+```javascript
+// Endpoint format
+https://api.themoviedb.org/3/{movie|tv}/{tmdb_id}?api_key=${KEY}&append_to_response=credits
+
+// Response structure
+{
+    id: 550,
+    title: "Fight Club",  // or "name" for TV shows
+    overview: "Plot description...",
+    vote_average: 8.4,  // 0-10 scale
+    release_date: "1999-10-15",  // or first_air_date for TV
+    poster_path: "/path.jpg",
+    imdb_id: "tt0137523",
+    runtime: 139,  // minutes
+    genres: [{id: 18, name: "Drama"}],
+    credits: {
+        cast: [{name: "Brad Pitt", character: "Tyler Durden"}],
+        crew: [{name: "David Fincher", job: "Director"}]
+    },
+    // TV-specific
+    number_of_seasons: 5,
+    number_of_episodes: 73,
+    episode_run_time: [42]
+}
+```
+
+**Error Handling:**
+```javascript
+// Common errors and solutions
+1. "Failed to add to list" → Check token in localStorage
+2. "Server error: rating validation failed" → Check rating is 0-5 (not 0-10)
+3. "Unauthorized" → Token expired or invalid, redirect to login
+4. "Network error" → TMDB API key invalid or rate limit exceeded
+```
+
+---
+
+### 4. `frontend/js/omdb.js` (299 lines) - NEW in v2.4.0
 **OMDb API Service** - Fast search for slow internet
 
 **Key Functions:**
@@ -276,7 +652,7 @@ const OMDB_CONFIG = {
 };
 ```
 
-### 3. `frontend/js/settings.js` (1242 lines)
+### 5. `frontend/js/settings.js` (1242 lines)
 **Complete Settings System** - 10 sections
 
 **Sections:**
@@ -301,7 +677,7 @@ showHelpFAQ()       // Help modal
 showReportBug()     // Bug report modal
 ```
 
-### 4. `frontend/css/styles.css` (5270 lines)
+### 6. `frontend/css/styles.css` (7104 lines) - ENHANCED in v2.4.1
 **Complete Styling** - Netflix theme
 
 **Structure:**
@@ -313,9 +689,12 @@ Lines 601-1500: Movie cards, grids, filters
 Lines 1501-2000: Modals, forms, buttons
 Lines 2001-2500: Dashboard, stats, analytics
 Lines 2501-3000: Settings page
-Lines 3001-4000: Achievements, recommendations
-Lines 4001-5000: Admin panel, tables
-Lines 5001-5270: Responsive media queries ⚠️ NEEDS WORK
+Lines 3001-3933: Achievements, recommendations
+Lines 3933-4130: Action buttons (v2.4.1) 🆕
+Lines 4130-4280: Toast notifications (v2.4.1) 🆕
+Lines 4280-4650: Admin panel, tables
+Lines 4650-4780: Mobile responsive (v2.4.1) 🆕
+Lines 4780-7104: Responsive media queries & remaining styles
 ```
 
 **Theme:**
@@ -330,7 +709,7 @@ Lines 5001-5270: Responsive media queries ⚠️ NEEDS WORK
 }
 ```
 
-### 5. `backend/models/Movie.js`
+### 7. `backend/models/Movie.js`
 **Movie Database Schema**
 
 ```javascript
@@ -420,7 +799,116 @@ npx serve -p 3000
 
 ---
 
-## 📝 Version History
+## � Troubleshooting Guide (v2.4.1)
+
+### Categories Page - Action Buttons Issues
+
+**Problem 1: "Failed to add to list. Please try again."**
+- **Cause:** Token not found or expired
+- **Solution:** 
+  ```javascript
+  // Check localStorage
+  console.log(localStorage.getItem('token'));
+  // If null, redirect to login
+  window.location.href = '/login.html';
+  ```
+
+**Problem 2: "Server error: rating validation failed"**
+- **Cause:** TMDB rating (0-10) not converted to app scale (0-5)
+- **Solution:** Already fixed in v2.4.1
+  ```javascript
+  // Correct conversion in categories.js
+  const convertedRating = tmdbRating / 2;  // 7.1 → 3.55
+  ```
+
+**Problem 3: Missing movie details in dashboard**
+- **Cause:** Incomplete data fetching from TMDB
+- **Solution:** Already fixed in v2.4.1 - now fetches:
+  - Director/Creator
+  - Cast (top 5 actors)
+  - Genres
+  - Runtime
+  - Plot/Overview
+  - Seasons/Episodes (for TV shows)
+
+**Problem 4: Action buttons not showing**
+- **Desktop:** Buttons should appear on hover
+- **Mobile:** Buttons always visible
+- **Debug:**
+  ```css
+  /* Force show buttons for testing */
+  .action-buttons {
+      display: flex !important;
+  }
+  ```
+
+**Problem 5: Toast notifications not appearing**
+- **Check z-index:** Notifications use `z-index: 9999`
+- **Check position:** Fixed at `top: 80px, right: 20px`
+- **Debug:**
+  ```javascript
+  // Test notification
+  showNotification('Test message', 'success');
+  ```
+
+**Problem 6: API endpoint returns 404**
+- **Wrong:** `${API_URL}/movies`
+- **Correct:** `${API_URL}/api/movies`
+- **Check backend routes:**
+  ```javascript
+  // backend/server.js should have:
+  app.use('/api/movies', movieRoutes);
+  ```
+
+**Problem 7: TMDB API key issues**
+- **Error:** "Invalid API key" or network timeout
+- **Solution:** Check `categories.js` line ~10
+  ```javascript
+  const TMDB_API_KEY = 'YOUR_TMDB_API_KEY';
+  // Get free key from https://www.themoviedb.org/settings/api
+  ```
+
+**Problem 8: Mobile layout issues**
+- **Symptoms:** Cards too large, buttons overlapping
+- **Solution:** Already fixed in v2.4.1 with media queries
+- **Check:** `styles.css` lines 4650-4780
+  ```css
+  @media (max-width: 768px) {
+      .results-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+      }
+  }
+  ```
+
+### General Debugging Tips
+
+**Backend Connection:**
+```bash
+# Test backend is running
+curl http://localhost:5000/api/health
+
+# Check MongoDB connection
+# Look for "MongoDB Connected" in terminal
+```
+
+**Frontend API Calls:**
+```javascript
+// Enable detailed logging
+localStorage.setItem('debug', 'true');
+
+// Check network tab in DevTools
+// Look for failed requests to /api/movies
+```
+
+**Common HTTP Status Codes:**
+- `401 Unauthorized` → Token missing or expired
+- `404 Not Found` → Wrong API endpoint
+- `500 Internal Server Error` → Backend validation error (check rating scale)
+- `429 Too Many Requests` → TMDB API rate limit (5000/day)
+
+---
+
+## �📝 Version History
 
 ### v2.4.1 (November 2025) ⭐ CURRENT
 **Key Features:**
