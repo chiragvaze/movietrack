@@ -39,8 +39,10 @@ const genres = [
 let selectedGenres = [];
 let searchQuery = '';
 let allResults = [];
+let displayedResults = [];
 let currentPage = 1;
 let isLoading = false;
+const ITEMS_PER_PAGE = 20; // Number of items to load per page
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initThemeToggle();
     initSidebar();
     initLogout();
+    initLoadMore();
 });
 
 // Render category filter buttons
@@ -228,6 +231,7 @@ function displayResults(results) {
     const grid = document.getElementById('categoriesGrid');
     const resultsTitle = document.getElementById('resultsTitle');
     const resultsCount = document.getElementById('resultsCount');
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
     
     // Update title
     if (selectedGenres.length > 0) {
@@ -241,6 +245,10 @@ function displayResults(results) {
     
     resultsCount.textContent = `${results.length} results found`;
     
+    // Store results for pagination
+    displayedResults = results;
+    currentPage = 1;
+    
     if (results.length === 0) {
         grid.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
@@ -249,10 +257,29 @@ function displayResults(results) {
                 <p style="color: var(--text-secondary);">Try different filters or search terms</p>
             </div>
         `;
+        loadMoreContainer.style.display = 'none';
         return;
     }
     
-    grid.innerHTML = results.map(item => {
+    // Render first page
+    renderPage(1, true);
+    
+    // Show or hide Load More button
+    if (results.length > ITEMS_PER_PAGE) {
+        loadMoreContainer.style.display = 'flex';
+    } else {
+        loadMoreContainer.style.display = 'none';
+    }
+}
+
+// Render a specific page of results
+function renderPage(page, clearGrid = false) {
+    const grid = document.getElementById('categoriesGrid');
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const pageResults = displayedResults.slice(startIndex, endIndex);
+    
+    const html = pageResults.map(item => {
         const title = item.title || item.name;
         const year = (item.release_date || item.first_air_date || '').substring(0, 4);
         const rating = item.vote_average?.toFixed(1) || 'N/A';
@@ -260,22 +287,67 @@ function displayResults(results) {
             ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
             : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450"><rect fill="%232a2a2a" width="300" height="450"/><text fill="%23666" x="50%" y="50%" text-anchor="middle" font-size="20">No Image</text></svg>';
         
+        // Create unique IDs for each item
+        const itemData = JSON.stringify({
+            id: item.id,
+            title: title,
+            year: year,
+            rating: rating,
+            poster: poster,
+            mediaType: item.media_type
+        }).replace(/"/g, '&quot;');
+        
         return `
-            <div class="movie-card" onclick="showItemDetails(${item.id}, '${item.media_type}')">
-                <img src="${poster}" alt="${title}" class="movie-poster" loading="lazy">
-                <span class="media-type-badge ${item.media_type}">
-                    ${item.media_type === 'movie' ? '🎬 Movie' : '📺 TV Show'}
-                </span>
-                <div class="movie-info">
-                    <h3 class="movie-title" title="${title}">${title}</h3>
-                    <div class="movie-meta">
-                        <span class="movie-year">${year || 'N/A'}</span>
-                        <span class="movie-rating">⭐ ${rating}</span>
+            <div class="movie-card">
+                <div class="movie-card-inner" onclick="showItemDetails(${item.id}, '${item.media_type}')">
+                    <img src="${poster}" alt="${title}" class="movie-poster" loading="lazy">
+                    <span class="media-type-badge ${item.media_type}">
+                        ${item.media_type === 'movie' ? '🎬 Movie' : '📺 TV Show'}
+                    </span>
+                    <div class="movie-info">
+                        <h3 class="movie-title" title="${title}">${title}</h3>
+                        <div class="movie-meta">
+                            <span class="movie-year">${year || 'N/A'}</span>
+                            <span class="movie-rating">⭐ ${rating}</span>
+                        </div>
                     </div>
+                </div>
+                <div class="action-buttons" onclick="event.stopPropagation()">
+                    <button class="action-btn watched-btn" onclick="addToList('watched', ${item.id}, '${item.media_type}', ${itemData})" title="Mark as Watched">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="action-btn watching-btn" onclick="addToList('watching', ${item.id}, '${item.media_type}', ${itemData})" title="Currently Watching">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="action-btn watchlist-btn" onclick="addToList('watchlist', ${item.id}, '${item.media_type}', ${itemData})" title="Add to Watchlist">
+                        <i class="fas fa-bookmark"></i>
+                    </button>
                 </div>
             </div>
         `;
     }).join('');
+    
+    if (clearGrid) {
+        grid.innerHTML = html;
+    } else {
+        grid.innerHTML += html;
+    }
+    
+    // Update Load More button visibility
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (endIndex >= displayedResults.length) {
+        loadMoreContainer.style.display = 'none';
+    } else {
+        loadMoreContainer.style.display = 'flex';
+        loadMoreBtn.classList.remove('loading');
+        loadMoreBtn.innerHTML = `
+            <i class="fas fa-chevron-down"></i>
+            <span>Load More</span>
+            <i class="fas fa-chevron-down"></i>
+        `;
+    }
 }
 
 // Show item details (redirect or modal)
@@ -614,4 +686,203 @@ function showProfileModal() {
             modal.remove();
         }
     });
+}
+
+// Initialize Load More button
+function initLoadMore() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', handleLoadMore);
+    }
+}
+
+// Handle Load More click
+function handleLoadMore() {
+    if (isLoading) return;
+    
+    isLoading = true;
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    // Show loading state
+    loadMoreBtn.classList.add('loading');
+    loadMoreBtn.innerHTML = `
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading...</span>
+        <i class="fas fa-spinner fa-spin"></i>
+    `;
+    
+    // Simulate a small delay for better UX
+    setTimeout(() => {
+        currentPage++;
+        renderPage(currentPage, false);
+        isLoading = false;
+        
+        // Smooth scroll to new content
+        const grid = document.getElementById('categoriesGrid');
+        const cards = grid.querySelectorAll('.movie-card');
+        const lastCardBeforeLoad = cards[cards.length - ITEMS_PER_PAGE - 1];
+        if (lastCardBeforeLoad) {
+            setTimeout(() => {
+                lastCardBeforeLoad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }, 500);
+}
+
+// Add to List functionality (make it globally accessible)
+window.addToList = async function(listType, tmdbId, mediaType, itemDataStr) {
+    console.log('addToList called with:', { listType, tmdbId, mediaType, itemDataStr });
+    
+    try {
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            showNotification('Please login to add movies to your list', 'error');
+            return;
+        }
+        
+        // Parse the item data (it comes as a string with &quot; instead of ")
+        let item;
+        if (typeof itemDataStr === 'string') {
+            item = JSON.parse(itemDataStr.replace(/&quot;/g, '"'));
+        } else {
+            item = itemDataStr;
+        }
+        
+        console.log('Parsed item data:', item);
+        
+        // Show loading state on button
+        const clickedButton = event.target.closest('.action-btn');
+        const buttons = event.target.closest('.action-buttons').querySelectorAll('.action-btn');
+        buttons.forEach(btn => btn.disabled = true);
+        
+        // Show loading notification
+        showNotification('Fetching movie details...', 'info');
+        
+        // Fetch full movie details from TMDB
+        const endpoint = mediaType === 'movie' ? 'movie' : 'tv';
+        const tmdbResponse = await fetch(
+            `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=credits`
+        );
+        
+        if (!tmdbResponse.ok) {
+            throw new Error('Failed to fetch movie details from TMDB');
+        }
+        
+        const tmdbData = await tmdbResponse.json();
+        console.log('TMDB full data:', tmdbData);
+        
+        // Extract detailed information
+        const director = tmdbData.credits?.crew?.find(person => person.job === 'Director')?.name || 'Unknown';
+        const cast = tmdbData.credits?.cast?.slice(0, 5).map(actor => actor.name) || [];
+        const genres = tmdbData.genres?.map(g => g.name).join(', ') || 'General';
+        const tmdbRating = tmdbData.vote_average || 0;
+        
+        // Get season details for TV shows
+        let seasonDetails = [];
+        if (mediaType === 'tv' && tmdbData.seasons) {
+            seasonDetails = tmdbData.seasons
+                .filter(season => season.season_number > 0) // Skip specials
+                .map(season => ({
+                    seasonNumber: season.season_number,
+                    episodeCount: season.episode_count
+                }));
+        }
+        
+        // Prepare comprehensive movie data
+        const movieData = {
+            type: mediaType, // 'movie' or 'tv'
+            title: tmdbData.title || tmdbData.name,
+            year: parseInt((tmdbData.release_date || tmdbData.first_air_date || '').substring(0, 4)) || new Date().getFullYear(),
+            status: listType, // 'watched', 'watching', or 'watchlist'
+            rating: 0, // User hasn't rated it yet
+            genre: genres,
+            poster: tmdbData.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : item.poster,
+            backdrop: tmdbData.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}` : null,
+            tmdbId: tmdbId,
+            imdbRating: tmdbRating,
+            plot: tmdbData.overview || 'No overview available',
+            runtime: tmdbData.runtime || null,
+            director: director,
+            cast: cast,
+            // TV Show specific fields
+            numberOfSeasons: tmdbData.number_of_seasons || null,
+            numberOfEpisodes: tmdbData.number_of_episodes || null,
+            seasonDetails: seasonDetails.length > 0 ? seasonDetails : null
+        };
+        
+        console.log('Sending movie data:', movieData);
+        console.log('API URL:', API_URL);
+        
+        const response = await fetch(`${API_URL}/api/movies`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(movieData)
+        });
+        
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (response.ok) {
+            // Show success notification
+            showNotification(`Added to ${listType}!`, 'success');
+            
+            // Add visual feedback
+            if (clickedButton) {
+                clickedButton.classList.add('added');
+                setTimeout(() => {
+                    clickedButton.classList.remove('added');
+                }, 2000);
+            }
+        } else {
+            showNotification(data.message || `Failed to add to ${listType}`, 'error');
+        }
+        
+        // Re-enable buttons
+        buttons.forEach(btn => btn.disabled = false);
+        
+    } catch (error) {
+        console.error('Error adding to list:', error);
+        showNotification('Failed to add to list. Please try again.', 'error');
+        
+        // Re-enable buttons on error
+        if (event && event.target) {
+            const buttons = event.target.closest('.action-buttons')?.querySelectorAll('.action-btn');
+            if (buttons) {
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+    }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    // Remove existing notification if any
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Trigger animation
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }

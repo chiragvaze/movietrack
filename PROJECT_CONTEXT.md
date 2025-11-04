@@ -1,7 +1,7 @@
 # 🎬 MovieTrack - Complete Project Context
 
-**Last Updated:** November 3, 2025  
-**Current Version:** v2.4.0 (Hybrid API System)  
+**Last Updated:** November 4, 2025  
+**Current Version:** v2.4.1 (Categories Enhancement)  
 **Status:** Production Ready ✅  
 **Repository:** https://github.com/chiragvaze/movietrack
 
@@ -11,7 +11,7 @@
 
 | **Category** | **Details** |
 |-------------|-------------|
-| **Version** | 2.4.0 (Hybrid API System) |
+| **Version** | 2.4.1 (Categories Enhancement) |
 | **Frontend** | https://movietrack-three.vercel.app |
 | **Backend** | https://movietrack-backend.onrender.com |
 | **Admin Panel** | https://movietrack-three.vercel.app/admin-login.html |
@@ -37,7 +37,7 @@
 
 ---
 
-## ✅ Current Status (v2.4.0)
+## ✅ Current Status (v2.4.1)
 
 ### What's Working Perfectly
 - ✅ Hybrid API System: OMDb (fast search) + TMDB (trending/recommendations)
@@ -155,7 +155,7 @@ movie-tracker/
 │   ├── js/
 │   │   ├── config.js           API URL config (dev/prod)
 │   │   ├── api.js              Backend API wrapper
-│   │   ├── omdb.js             OMDb API service ⭐ NEW v2.4.0
+│   │   ├── omdb.js             OMDb API service ⭐ v2.4.0
 │   │   ├── tmdb.js             TMDB API service
 │   │   ├── auth.js             Authentication logic
 │   │   ├── app.js              Landing page
