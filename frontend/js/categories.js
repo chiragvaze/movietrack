@@ -44,6 +44,7 @@ let isLoading = false;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Categories page loaded'); // Debug
     renderCategoryButtons();
     loadAllMovies();
     initSearch();
@@ -525,20 +526,32 @@ function initSidebar() {
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const closeSidebarBtn = document.getElementById('closeSidebarBtn');
     
-    if (hamburgerBtn) {
-        hamburgerBtn.addEventListener('click', () => {
+    console.log('Initializing sidebar...', { hamburgerBtn, sidebar, sidebarOverlay }); // Debug
+    
+    if (hamburgerBtn && sidebar && sidebarOverlay) {
+        hamburgerBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Hamburger clicked - opening sidebar'); // Debug
             sidebar.classList.add('active');
             sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
         });
+    } else {
+        console.error('Sidebar elements not found:', { hamburgerBtn, sidebar, sidebarOverlay });
     }
     
     const closeSidebar = () => {
-        sidebar.classList.remove('active');
-        sidebarOverlay.classList.remove('active');
+        if (sidebar) sidebar.classList.remove('active');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = ''; // Restore scrolling
     };
     
-    if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
-    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', closeSidebar);
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
 }
 
 // Logout

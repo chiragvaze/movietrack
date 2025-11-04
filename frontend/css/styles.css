@@ -4645,16 +4645,444 @@ footer {
         min-width: 50px;
     }
     
+    .analytics-modal {
+        padding: 10px;
+    }
+    
+    .analytics-modal-content {
+        max-height: 95vh;
+        border-radius: 8px;
+    }
+    
+    .analytics-modal-header {
+        padding: 15px 20px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .analytics-modal-header h2 {
+        font-size: 1.3rem;
+        gap: 8px;
+    }
+    
+    .close-analytics {
+        width: 35px;
+        height: 35px;
+        font-size: 1.2rem;
+    }
+    
+    .analytics-modal-body {
+        padding: 15px;
+    }
+    
     .analytics-charts {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .analytics-stats-grid {
         grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .analytics-stat-card {
+        padding: 15px;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
     }
     
     .analytics-lists {
         grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .analytics-list-card {
+        padding: 15px;
+    }
+    
+    .analytics-list-card h3 {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .analytics-modal {
+        padding: 0;
+    }
+    
+    .analytics-modal-content {
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .analytics-modal-header {
+        padding: 12px 15px;
+        border-radius: 0;
+    }
+    
+    .analytics-modal-header h2 {
+        font-size: 1.1rem;
+        gap: 6px;
+    }
+    
+    .analytics-modal-header h2 i {
+        font-size: 1.2rem;
+    }
+    
+    .close-analytics {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+    
+    .analytics-modal-body {
+        padding: 12px;
+    }
+    
+    .analytics-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .analytics-stat-card {
+        padding: 12px;
+    }
+    
+    .stat-icon {
+        font-size: 1.8rem;
+        min-width: 45px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    
+    .analytics-charts {
+        gap: 12px;
+    }
+    
+    .chart-card {
+        padding: 12px;
+    }
+    
+    .chart-card h3 {
+        font-size: 1rem;
+    }
+    
+    .analytics-lists {
+        gap: 12px;
+    }
+    
+    .analytics-list-card {
+        padding: 12px;
+    }
+    
+    .analytics-list-card h3 {
+        font-size: 1rem;
+    }
+    
+    .analytics-movie-item {
+        padding: 10px;
+    }
+    
+    .analytics-movie-rank {
+        font-size: 0.9rem;
+        min-width: 28px;
+        height: 28px;
+    }
+    
+    .analytics-movie-title {
+        font-size: 0.85rem;
+    }
+    
+    .analytics-movie-meta {
+        font-size: 0.75rem;
+    }
+    
+    .analytics-movie-rating {
+        font-size: 0.85rem;
+    }
+    
+    /* Achievements Modal Mobile */
+    .achievements-modal {
+        padding: 10px;
+    }
+    
+    .achievements-modal-content {
+        max-height: 95vh;
+        border-radius: 8px;
+    }
+    
+    .achievements-modal-header {
+        padding: 15px 20px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .achievements-modal-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .close-achievements {
+        width: 35px;
+        height: 35px;
+        font-size: 1.2rem;
+    }
+    
+    .achievements-modal-body {
+        padding: 15px;
+    }
+    
+    .achievements-grid {
+        gap: 15px;
+    }
+    
+    /* Upcoming Movies Mobile */
+    .upcoming-modal {
+        padding: 10px;
+    }
+    
+    .upcoming-modal-content {
+        max-height: 95vh;
+        border-radius: 8px;
+    }
+    
+    .upcoming-modal-header {
+        padding: 15px 20px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .upcoming-modal-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .close-upcoming {
+        width: 35px;
+        height: 35px;
+        font-size: 1.2rem;
+    }
+    
+    .upcoming-movies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Analytics Mobile 480px */
+    .analytics-modal {
+        padding: 0;
+    }
+    
+    .analytics-modal-content {
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .analytics-modal-header {
+        padding: 12px 15px;
+        border-radius: 0;
+    }
+    
+    .analytics-modal-header h2 {
+        font-size: 1.1rem;
+        gap: 6px;
+    }
+    
+    .analytics-modal-header h2 i {
+        font-size: 1.2rem;
+    }
+    
+    .close-analytics {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+    
+    .analytics-modal-body {
+        padding: 12px;
+    }
+    
+    .analytics-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .analytics-stat-card {
+        padding: 12px;
+    }
+    
+    .stat-icon {
+        font-size: 1.8rem;
+        min-width: 45px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    
+    .analytics-charts {
+        gap: 12px;
+    }
+    
+    .chart-card {
+        padding: 12px;
+    }
+    
+    .chart-card h3 {
+        font-size: 1rem;
+    }
+    
+    .analytics-lists {
+        gap: 12px;
+    }
+    
+    .analytics-list-card {
+        padding: 12px;
+    }
+    
+    .analytics-list-card h3 {
+        font-size: 1rem;
+    }
+    
+    .analytics-movie-item {
+        padding: 10px;
+    }
+    
+    .analytics-movie-rank {
+        font-size: 0.9rem;
+        min-width: 28px;
+        height: 28px;
+    }
+    
+    .analytics-movie-title {
+        font-size: 0.85rem;
+    }
+    
+    .analytics-movie-meta {
+        font-size: 0.75rem;
+    }
+    
+    .analytics-movie-rating {
+        font-size: 0.85rem;
+    }
+    
+    /* Achievements Modal Mobile 480px */
+    .achievements-modal {
+        padding: 0;
+    }
+    
+    .achievements-modal-content {
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .achievements-modal-header {
+        padding: 12px 15px;
+        border-radius: 0;
+    }
+    
+    .achievements-modal-header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .achievements-modal-header h2 i {
+        font-size: 1.2rem;
+    }
+    
+    .close-achievements {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+    
+    .achievements-modal-body {
+        padding: 12px;
+    }
+    
+    .achievement-card {
+        padding: 12px;
+    }
+    
+    .achievement-icon {
+        font-size: 2rem;
+        min-width: 45px;
+    }
+    
+    .achievement-name {
+        font-size: 1rem;
+    }
+    
+    .achievement-desc {
+        font-size: 0.8rem;
+    }
+    
+    .achievement-badge-label {
+        font-size: 0.7rem;
+    }
+    
+    /* Upcoming Movies Mobile 480px */
+    .upcoming-modal {
+        padding: 0;
+    }
+    
+    .upcoming-modal-content {
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .upcoming-modal-header {
+        padding: 12px 15px;
+        border-radius: 0;
+    }
+    
+    .upcoming-modal-header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .upcoming-modal-header h2 i {
+        font-size: 1.2rem;
+    }
+    
+    .close-upcoming {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+    
+    .upcoming-movies-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .upcoming-movie-card {
+        padding: 12px;
+    }
+    
+    .upcoming-movie-poster {
+        height: 180px;
+    }
+    
+    .upcoming-movie-title {
+        font-size: 0.9rem;
+    }
+    
+    .upcoming-movie-date {
+        font-size: 0.8rem;
     }
 }
 
