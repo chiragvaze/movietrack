@@ -8,6 +8,13 @@ const TMDB_API_KEY = '409d37969fa9cdbc46f0baf72ff9c6d2';
  * @param {string} [type='success'] - The type of toast (success, error, info).
  */
 function showToast(message, type = 'success') {
+    // Check user settings for toast notifications
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    
+    // Check if toasts are enabled for this type
+    if (type === 'success' && settings.successToasts === false) return;
+    if (type === 'error' && settings.errorToasts === false) return;
+    
     const container = document.getElementById('toast-container');
     if (!container) return;
 
@@ -29,11 +36,14 @@ function showToast(message, type = 'success') {
         toast.classList.add('show');
     }, 100);
 
-    // Animate out and remove after 3 seconds
+    // Get notification duration from settings (default 3000ms)
+    const duration = settings.notifDuration || 3000;
+    
+    // Animate out and remove after specified duration
     setTimeout(() => {
         toast.classList.remove('show');
         toast.addEventListener('transitionend', () => toast.remove());
-    }, 3000);
+    }, duration);
 }
 
 function checkAuth() {
@@ -66,6 +76,11 @@ function loadUserSettings() {
         // Apply default filter if set
         if (settings.defaultFilter) {
             currentFilter = settings.defaultFilter;
+        }
+        
+        // Apply default media type filter if set
+        if (settings.defaultMediaType && settings.defaultMediaType !== 'both') {
+            currentTypeFilter = settings.defaultMediaType; // 'movie' or 'tv'
         }
         
         // Apply default sort if set
@@ -116,6 +131,16 @@ function applyUserSettingsToUI() {
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(btn => {
         if (btn.dataset.filter === currentFilter) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Apply type filter button active state
+    const typeFilterButtons = document.querySelectorAll('.type-filter-btn');
+    typeFilterButtons.forEach(btn => {
+        if (btn.dataset.type === currentTypeFilter) {
             btn.classList.add('active');
         } else {
             btn.classList.remove('active');
@@ -254,10 +279,15 @@ async function loadMovies() {
             loadRecommendations(); // Load recommendations after movies are loaded
             
             // Check for new achievements
-            const newAchievements = getNewAchievements(movies);
-            newAchievements.forEach(achievement => {
-                showAchievementUnlock(achievement);
-            });
+            const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+            const achievementNotifs = settings.achievementNotifs !== false; // Default true
+            
+            if (achievementNotifs) {
+                const newAchievements = getNewAchievements(movies);
+                newAchievements.forEach(achievement => {
+                    showAchievementUnlock(achievement);
+                });
+            }
         }
     } catch (error) {
         console.error('Error loading movies:', error);
@@ -301,12 +331,15 @@ async function loadRecommendations() {
         // Step 1: Analyze user preferences
         const userProfile = analyzeUserPreferences(movies);
         console.log('👤 User Profile:', userProfile);
+        console.log('📊 Movies with TMDB IDs:', movies.filter(m => m.tmdbId).length);
+        console.log('⭐ Movies with 4+ rating:', movies.filter(m => m.rating >= 4).length);
         
         // Step 2: Get recommendations based on multiple strategies
         const recommendations = await getSmartRecommendations(userProfile);
         console.log(`✨ Generated ${recommendations.length} smart recommendations`);
         
         if (recommendations.length === 0) {
+            console.warn('⚠️ No recommendations generated. Check if movies have TMDB IDs and ratings.');
             recommendationsSection.style.display = 'none';
             return;
         }
@@ -334,11 +367,29 @@ function analyzeUserPreferences(movies) {
         totalContent: movies.length
     };
     
-    // Get top-rated content (4+ stars)
-    profile.topRatedMovies = movies
+    // Get top-rated content (4+ stars) or fallback to any movies with TMDB ID
+    let topRated = movies
         .filter(m => m.rating >= 4 && m.tmdbId)
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 5);
+    
+    // Fallback: If no 4+ rated movies, use any rated movies (3+)
+    if (topRated.length === 0) {
+        topRated = movies
+            .filter(m => m.rating >= 3 && m.tmdbId)
+            .sort((a, b) => b.rating - a.rating)
+            .slice(0, 5);
+    }
+    
+    // Fallback: If still none, use any movies with TMDB ID (watched status)
+    if (topRated.length === 0) {
+        topRated = movies
+            .filter(m => m.tmdbId && m.status === 'watched')
+            .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+            .slice(0, 5);
+    }
+    
+    profile.topRatedMovies = topRated;
     
     // Calculate average rating
     const ratedMovies = movies.filter(m => m.rating > 0);
@@ -382,31 +433,43 @@ function analyzeUserPreferences(movies) {
 async function getSmartRecommendations(userProfile) {
     const allRecommendations = [];
     
+    // Get user settings for recommendations
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    const recContentBased = settings.recContentBased !== false; // Default true
+    const recGenreBased = settings.recGenreBased !== false; // Default true
+    const recTrending = settings.recTrending !== false; // Default true
+    const recMinRating = settings.recMinRating || 7;
+    const recPerSection = settings.recPerSection || 10;
+    
     // Strategy 1: "Because you watched..." - Similar to top-rated items
-    console.log('🎯 Strategy 1: Based on top-rated content...');
-    for (const item of userProfile.topRatedMovies) {
-        try {
-            let recs;
-            if (item.type === 'tv') {
-                recs = await TMDB.getTVRecommendations(item.tmdbId, 3);
-            } else {
-                recs = await TMDB.getMovieRecommendations(item.tmdbId, 3);
+    if (recContentBased) {
+        console.log('🎯 Strategy 1: Based on top-rated content...');
+        const itemsToCheck = Math.min(userProfile.topRatedMovies.length, 3);
+        for (let i = 0; i < itemsToCheck; i++) {
+            const item = userProfile.topRatedMovies[i];
+            try {
+                let recs;
+                if (item.type === 'tv') {
+                    recs = await TMDB.getTVRecommendations(item.tmdbId, Math.min(recPerSection, 5));
+                } else {
+                    recs = await TMDB.getMovieRecommendations(item.tmdbId, Math.min(recPerSection, 5));
+                }
+                
+                recs.forEach(rec => {
+                    rec.reason = `Because you loved "${item.title}"`;
+                    rec.strategy = 'similar';
+                });
+                
+                allRecommendations.push(...recs);
+            } catch (error) {
+                console.error(`Error getting recommendations for ${item.title}:`, error);
             }
-            
-            recs.forEach(rec => {
-                rec.reason = `Because you loved "${item.title}"`;
-                rec.strategy = 'similar';
-            });
-            
-            allRecommendations.push(...recs);
-        } catch (error) {
-            console.error(`Error getting recommendations for ${item.title}:`, error);
         }
     }
     
     // Strategy 2: Based on favorite genres
-    console.log('🎭 Strategy 2: Based on favorite genres...');
-    if (userProfile.favoriteGenres.length > 0) {
+    if (recGenreBased && userProfile.favoriteGenres.length > 0) {
+        console.log('🎭 Strategy 2: Based on favorite genres...');
         try {
             // Get genre IDs from TMDB
             const genreMap = {
@@ -422,7 +485,7 @@ async function getSmartRecommendations(userProfile) {
                 const genreRecs = await TMDB.discoverByGenre(
                     userProfile.preferredType === 'movie' ? 'movie' : 'tv',
                     genreId,
-                    5
+                    Math.min(recPerSection, 10)
                 );
                 
                 genreRecs.forEach(rec => {
@@ -438,26 +501,65 @@ async function getSmartRecommendations(userProfile) {
     }
     
     // Strategy 3: Trending in your preferred type
-    console.log('📈 Strategy 3: Trending content...');
-    try {
-        const trending = await TMDB.getTrending(userProfile.preferredType, 'week', 5);
-        trending.forEach(rec => {
-            rec.reason = 'Trending now';
-            rec.strategy = 'trending';
-        });
-        allRecommendations.push(...trending);
-    } catch (error) {
-        console.error('Error getting trending:', error);
+    if (recTrending) {
+        console.log('📈 Strategy 3: Trending content...');
+        try {
+            const trending = await TMDB.getTrending(userProfile.preferredType, 'week', Math.min(recPerSection, 10));
+            trending.forEach(rec => {
+                rec.reason = 'Trending now';
+                rec.strategy = 'trending';
+            });
+            allRecommendations.push(...trending);
+        } catch (error) {
+            console.error('Error getting trending:', error);
+        }
     }
     
     // Remove duplicates and items already in collection
     const existingIds = movies.map(m => m.tmdbId).filter(Boolean);
-    const uniqueRecommendations = allRecommendations
+    const hideSimilar = settings.recHideSimilar || false;
+    
+    console.log(`📊 Before filtering: ${allRecommendations.length} total recommendations`);
+    
+    let uniqueRecommendations = allRecommendations
         .filter((rec, index, self) => 
             index === self.findIndex(r => r.tmdbId === rec.tmdbId)
         )
-        .filter(rec => !existingIds.includes(rec.tmdbId))
-        .slice(0, 20); // Limit to 20 total
+        .filter(rec => !existingIds.includes(rec.tmdbId));
+    
+    console.log(`🔍 After duplicate removal: ${uniqueRecommendations.length} recommendations`);
+    
+    // Filter by minimum rating if set
+    if (recMinRating > 0) {
+        const beforeRatingFilter = uniqueRecommendations.length;
+        uniqueRecommendations = uniqueRecommendations.filter(rec => 
+            rec.rating && rec.rating >= recMinRating
+        );
+        console.log(`⭐ Rating filter (>=${recMinRating}): ${beforeRatingFilter} → ${uniqueRecommendations.length} recommendations`);
+        
+        // If rating filter removes everything, lower the threshold
+        if (uniqueRecommendations.length === 0 && recMinRating > 6) {
+            console.warn(`⚠️ Min rating ${recMinRating} filtered out all recommendations! Trying with 6.0...`);
+            uniqueRecommendations = allRecommendations
+                .filter((rec, index, self) => 
+                    index === self.findIndex(r => r.tmdbId === rec.tmdbId)
+                )
+                .filter(rec => !existingIds.includes(rec.tmdbId))
+                .filter(rec => rec.rating && rec.rating >= 6.0);
+            console.log(`✅ With rating >=6.0: ${uniqueRecommendations.length} recommendations`);
+        }
+    }
+    
+    console.log(`🎯 After rating filter (min ${recMinRating}): ${uniqueRecommendations.length} recommendations`);
+    
+    // Hide similar recommendations if setting enabled
+    if (hideSimilar) {
+        // Keep only trending and genre-based, remove "similar" strategy
+        uniqueRecommendations = uniqueRecommendations.filter(rec => rec.strategy !== 'similar');
+    }
+    
+    // Limit to total recommendations setting
+    uniqueRecommendations = uniqueRecommendations.slice(0, Math.min(recPerSection * 2, 20));
     
     return uniqueRecommendations;
 }
@@ -515,6 +617,48 @@ function displayRecommendations(recommendations, userProfile) {
     }
     
     carousel.innerHTML = html;
+    
+    // Add smooth scroll for recommendation grids
+    initRecommendationScroll();
+}
+
+/**
+ * Initialize smooth scrolling for recommendation grids
+ */
+function initRecommendationScroll() {
+    const grids = document.querySelectorAll('.rec-grid');
+    
+    grids.forEach(grid => {
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        
+        grid.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.recommendation-card')) return;
+            isDown = true;
+            grid.classList.add('active');
+            startX = e.pageX - grid.offsetLeft;
+            scrollLeft = grid.scrollLeft;
+        });
+        
+        grid.addEventListener('mouseleave', () => {
+            isDown = false;
+            grid.classList.remove('active');
+        });
+        
+        grid.addEventListener('mouseup', () => {
+            isDown = false;
+            grid.classList.remove('active');
+        });
+        
+        grid.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - grid.offsetLeft;
+            const walk = (x - startX) * 2;
+            grid.scrollLeft = scrollLeft - walk;
+        });
+    });
 }
 
 /**
@@ -575,6 +719,11 @@ function renderMovies() {
     const container = document.getElementById('moviesContainer');
     let filteredMovies = movies;
     
+    // Get user settings for display options
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    const showYear = settings.showYear !== false; // Default to true
+    const showRuntime = settings.showRuntime !== false; // Default to true
+    
     // Filter by status
     if (currentFilter !== 'all') {
         filteredMovies = filteredMovies.filter(m => m.status === currentFilter);
@@ -625,11 +774,12 @@ function renderMovies() {
                         ${movie.type === 'tv' ? '<span class="type-badge">📺</span>' : ''}
                         ${movie.title}
                     </h4>
-                    <span class="movie-year">${movie.year || 'N/A'}</span>
+                    ${showYear ? `<span class="movie-year">${movie.year || 'N/A'}</span>` : ''}
                 </div>
                 <div class="movie-info">
                     <span class="movie-status status-${movie.status}">${movie.status}</span>
                     <span class="movie-rating">${movie.rating > 0 ? '⭐'.repeat(movie.rating) : 'Not rated'}</span>
+                    ${showRuntime && movie.runtime ? `<span class="movie-runtime"><i class="fas fa-clock"></i> ${movie.runtime} min</span>` : ''}
                 </div>
                 ${movie.type === 'tv' && movie.currentSeason ? `
                     <div class="tv-progress">
@@ -1190,7 +1340,7 @@ function createDetailsModal(movie) {
                             <span>Your Rating: ${movie.rating > 0 ? '⭐'.repeat(movie.rating) : 'Not rated'}</span>
                             ${movie.imdbRating ? `<span>TMDB: ${movie.imdbRating.toFixed(1)}/10</span>` : ''}
                         </div>
-                        ${movie.plot ? `<p class="details-plot">${movie.plot}</p>` : ''}
+                        ${movie.plot ? `<p class="details-plot ${getSpoilerClass()}" ${getSpoilerAttributes()}>${movie.plot}</p>` : ''}
                         ${movie.director ? `<p><strong>Director:</strong> ${movie.director}</p>` : ''}
                         ${movie.cast && movie.cast.length > 0 ? `<p><strong>Cast:</strong> ${movie.cast.join(', ')}</p>` : ''}
                         ${movie.watchedDate ? `<p><strong>Watched on:</strong> ${new Date(movie.watchedDate).toLocaleDateString()}</p>` : ''}
@@ -1200,6 +1350,18 @@ function createDetailsModal(movie) {
         </div>
     `;
     return modal;
+}
+
+// Helper function to get spoiler protection class
+function getSpoilerClass() {
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    return settings.spoilerProtection ? 'spoiler-protected' : '';
+}
+
+// Helper function to get spoiler protection attributes
+function getSpoilerAttributes() {
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    return settings.spoilerProtection ? 'onclick="this.classList.toggle(\'spoiler-revealed\')" title="Click to reveal spoiler"' : '';
 }
 
 // Show recommendation modal with quick add option
@@ -1235,7 +1397,7 @@ function showRecommendationModal(details) {
                         <div class="details-rating">
                             ${details.imdbRating ? `<span>TMDB Rating: ${details.imdbRating.toFixed(1)}/10 ⭐</span>` : ''}
                         </div>
-                        ${details.plot ? `<p class="details-plot">${details.plot}</p>` : ''}
+                        ${details.plot ? `<p class="details-plot ${getSpoilerClass()}" ${getSpoilerAttributes()}>${details.plot}</p>` : ''}
                         ${details.director ? `<p><strong>Director:</strong> ${details.director}</p>` : ''}
                         ${details.cast && details.cast.length > 0 ? `<p><strong>Cast:</strong> ${details.cast.join(', ')}</p>` : ''}
                         
@@ -1426,6 +1588,13 @@ typeFilterButtons.forEach(btn => {
 
 // Notification
 function showNotification(message, type = 'success') {
+    // Check user settings for notifications
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    
+    // Check if toasts are enabled for this type
+    if (type === 'success' && settings.successToasts === false) return;
+    if (type === 'error' && settings.errorToasts === false) return;
+    
     const notification = document.createElement('div');
     notification.textContent = message;
     
@@ -1433,12 +1602,38 @@ function showNotification(message, type = 'success') {
     if (type === 'error') bgColor = '#ef4444'; // error - red
     if (type === 'info') bgColor = '#3b82f6'; // info - blue
     
-    notification.style.cssText = `position: fixed; top: 80px; right: 20px; background: ${bgColor}; color: white; padding: 1rem 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 1000; animation: slideIn 0.3s ease;`;
+    // Get notification position from settings (default top-right)
+    const position = settings.notifPosition || 'top-right';
+    let positionStyles = 'top: 80px; right: 20px;'; // default
+    
+    switch(position) {
+        case 'top-left':
+            positionStyles = 'top: 80px; left: 20px;';
+            break;
+        case 'top-center':
+            positionStyles = 'top: 80px; left: 50%; transform: translateX(-50%);';
+            break;
+        case 'bottom-right':
+            positionStyles = 'bottom: 20px; right: 20px;';
+            break;
+        case 'bottom-left':
+            positionStyles = 'bottom: 20px; left: 20px;';
+            break;
+        case 'bottom-center':
+            positionStyles = 'bottom: 20px; left: 50%; transform: translateX(-50%);';
+            break;
+    }
+    
+    notification.style.cssText = `position: fixed; ${positionStyles} background: ${bgColor}; color: white; padding: 1rem 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 1000; animation: slideIn 0.3s ease;`;
     document.body.appendChild(notification);
+    
+    // Get notification duration from settings (default 3000ms)
+    const duration = settings.notifDuration || 3000;
+    
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, duration);
 }
 
 // Styles
@@ -1679,8 +1874,9 @@ function initViewModeToggle() {
     const viewIcon = viewModeBtn.querySelector('i');
     const moviesGrid = document.querySelector('.movies-grid');
     
-    // Load saved view mode preference or default to grid
-    const savedViewMode = localStorage.getItem('viewMode') || 'grid';
+    // Load saved view mode preference from settings (fallback to localStorage for backward compatibility)
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    const savedViewMode = settings.defaultView || localStorage.getItem('viewMode') || 'grid';
     if (savedViewMode === 'list') {
         moviesGrid.classList.add('list-view');
         updateViewIcon('list', viewIcon);
@@ -1853,9 +2049,16 @@ function showUpcomingModal(movies) {
     modal.className = 'modal';
     modal.style.display = 'block';
     
+    // Get poster size based on settings
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    const quality = settings.posterQuality || 'medium';
+    let posterSize = 'w342'; // default
+    if (quality === 'low') posterSize = 'w185';
+    else if (quality === 'high') posterSize = 'w780';
+    
     const upcomingHTML = movies.slice(0, 10).map(movie => `
         <div class="upcoming-item" onclick="openRecommendationDetails(${movie.id}, 'movie')">
-            <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200' + movie.poster_path : ''}" 
+            <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/' + posterSize + movie.poster_path : ''}" 
                  alt="${movie.title}"
                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22300%22><rect fill=%22%232a2a2a%22 width=%22200%22 height=%22300%22/><text fill=%22%23666%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'">
             <div class="upcoming-info">
@@ -2140,7 +2343,93 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // Initialize keyboard shortcuts
+    initKeyboardShortcuts();
 });
+
+// Keyboard shortcuts functionality
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Check if keyboard shortcuts are enabled
+        const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+        const keyboardShortcuts = settings.keyboardShortcuts !== false; // Default true
+        
+        if (!keyboardShortcuts) return;
+        
+        // Don't trigger shortcuts when typing in input fields
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+            return;
+        }
+        
+        // Ctrl/Cmd + N: Add new movie
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            const addBtn = document.getElementById('addMovieBtn');
+            if (addBtn) addBtn.click();
+        }
+        
+        // Ctrl/Cmd + F: Focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+        
+        // A: Open Analytics
+        if (e.key === 'a' || e.key === 'A') {
+            e.preventDefault();
+            if (typeof openAnalytics === 'function') {
+                openAnalytics();
+            }
+        }
+        
+        // H: Open Achievements
+        if (e.key === 'h' || e.key === 'H') {
+            e.preventDefault();
+            if (typeof displayAchievementsModal === 'function' && movies) {
+                displayAchievementsModal(movies);
+            }
+        }
+        
+        // Escape: Close modals
+        if (e.key === 'Escape') {
+            const modals = document.querySelectorAll('.modal, .analytics-modal.show, #achievementsModal.show');
+            modals.forEach(modal => {
+                if (modal.classList.contains('show')) {
+                    modal.classList.remove('show');
+                } else {
+                    modal.remove();
+                }
+            });
+        }
+        
+        // S: Open Settings
+        if (e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            window.location.href = 'settings.html';
+        }
+        
+        // Number keys 1-4: Filter shortcuts
+        if (e.key >= '1' && e.key <= '4') {
+            e.preventDefault();
+            const filterMap = {
+                '1': 'all',
+                '2': 'watched',
+                '3': 'watchlist',
+                '4': 'watching'
+            };
+            const filter = filterMap[e.key];
+            if (filter) {
+                const filterBtn = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
+                if (filterBtn) filterBtn.click();
+            }
+        }
+    });
+}
 
 /**
  * Opens the Analytics Modal and generates charts

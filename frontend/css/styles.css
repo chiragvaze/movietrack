@@ -1770,33 +1770,45 @@ input[type="date"]:focus {
 }
 
 .recommendations-carousel {
+    width: 100%;
+}
+
+/* Remove old carousel scrollbar styles - now using rec-grid scrollbars */
+
+.recommendations-section {
+    background: var(--bg-primary);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+
+.recommendations-section h3 {
+    color: var(--text-primary);
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
     display: flex;
-    gap: 1.5rem;
-    overflow-x: auto;
-    padding: 1rem 0;
-    scroll-behavior: smooth;
+    align-items: center;
+    gap: 10px;
 }
 
-.recommendations-carousel::-webkit-scrollbar {
-    height: 8px;
+.recommendations-section h3 i {
+    color: var(--primary-color);
 }
 
-.recommendations-carousel::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
+.recommendations-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
 }
 
-.recommendations-carousel::-webkit-scrollbar-thumb {
-    background: var(--primary-color);
-    border-radius: 4px;
-}
-
-.recommendations-carousel::-webkit-scrollbar-thumb:hover {
-    background: #c00813;
+.recommendations-carousel {
+    width: 100%;
 }
 
 .recommendation-card {
-    flex: 0 0 200px;
+    flex: 0 0 180px;
+    min-width: 180px;
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
     overflow: hidden;
@@ -1807,9 +1819,10 @@ input[type="date"]:focus {
 }
 
 .recommendation-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-red);
+    transform: translateY(-8px);
+    box-shadow: 0 8px 30px rgba(229, 9, 20, 0.4);
     border-color: var(--primary-color);
+    z-index: 10;
 }
 
 .recommendation-card:hover .recommendation-overlay {
@@ -1818,9 +1831,10 @@ input[type="date"]:focus {
 
 .recommendation-poster {
     width: 100%;
-    height: 300px;
+    height: 270px;
     object-fit: cover;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    display: block;
 }
 
 .recommendation-overlay {
@@ -1829,42 +1843,61 @@ input[type="date"]:focus {
     left: 0;
     right: 0;
     padding: 10px;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
     opacity: 0;
     transition: var(--transition);
+    z-index: 2;
 }
 
 .rec-reason {
     color: var(--primary-color);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .rec-section {
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
+    width: 100%;
+    display: block;
+}
+
+.rec-section:last-child {
+    margin-bottom: 0;
 }
 
 .rec-section-title {
     color: var(--text-primary);
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    margin-bottom: 1.2rem;
     display: flex;
     align-items: center;
     gap: 10px;
+    font-weight: 600;
+    width: 100%;
 }
 
 .rec-section-title i {
     color: var(--primary-color);
+    font-size: 1.2rem;
 }
 
 .rec-grid {
     display: flex;
-    gap: 1.5rem;
+    gap: 1.2rem;
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 1rem;
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+}
+
+.rec-grid.active {
+    cursor: grabbing;
+    user-select: none;
 }
 
 .rec-grid::-webkit-scrollbar {
@@ -1886,11 +1919,12 @@ input[type="date"]:focus {
 }
 
 .recommendation-info {
-    padding: 1rem;
+    padding: 0.8rem;
+    background: var(--bg-secondary);
 }
 
 .recommendation-title {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.5rem;
@@ -1898,18 +1932,21 @@ input[type="date"]:focus {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    line-height: 1.3;
+    min-height: 2.6rem;
 }
 
 .recommendation-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
 }
 
 .recommendation-year {
     color: var(--text-secondary);
+    font-weight: 500;
 }
 
 .recommendation-rating {
@@ -1918,6 +1955,11 @@ input[type="date"]:focus {
     gap: 0.3rem;
     color: #ffd700;
     font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.recommendation-rating i {
+    font-size: 0.75rem;
 }
 
 .recommendation-type-badge {
@@ -2905,6 +2947,42 @@ footer {
     line-height: 1.8;
     color: var(--text-secondary);
     margin: 1rem 0;
+}
+
+/* Spoiler Protection Styles */
+.spoiler-protected {
+    filter: blur(8px);
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.3s ease;
+    position: relative;
+}
+
+.spoiler-protected::before {
+    content: '⚠️ Click to reveal spoilers';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 0.9rem;
+    filter: blur(0);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.spoiler-protected:hover {
+    filter: blur(6px);
+}
+
+.spoiler-protected.spoiler-revealed {
+    filter: blur(0);
+    cursor: default;
+}
+
+.spoiler-protected.spoiler-revealed::before {
+    display: none;
 }
 
 .details-info p {

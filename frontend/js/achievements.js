@@ -316,11 +316,19 @@ function getNewAchievements(movies) {
  * Show achievement unlock notification
  */
 function showAchievementUnlock(achievement) {
+    // Check user settings for achievement celebration
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    const achievementCelebration = settings.achievementCelebration !== false; // Default true
+    const achievementHints = settings.achievementHints !== false; // Default true
+    
     const container = document.getElementById('achievement-container');
     if (!container) return;
     
     const notification = document.createElement('div');
     notification.className = 'achievement-notification';
+    if (achievementCelebration) {
+        notification.classList.add('with-celebration');
+    }
     notification.style.setProperty('--achievement-color', achievement.color);
     
     notification.innerHTML = `
@@ -330,7 +338,7 @@ function showAchievementUnlock(achievement) {
         <div class="achievement-content">
             <div class="achievement-badge-label">Achievement Unlocked!</div>
             <div class="achievement-name">${achievement.name}</div>
-            <div class="achievement-desc">${achievement.description}</div>
+            ${achievementHints ? `<div class="achievement-desc">${achievement.description}</div>` : ''}
         </div>
     `;
     
@@ -356,7 +364,29 @@ function displayAchievementsModal(movies) {
     const modal = document.getElementById('achievementsModal');
     if (!modal) return;
     
+    // Get user settings for achievement sort
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    const achievementSort = settings.achievementSort || 'category';
+    const achievementHints = settings.achievementHints !== false; // Default true
+    
     const earnedIds = new Set(result.earned.map(a => a.id));
+    
+    // Sort achievements based on user preference
+    let achievementsList = Object.values(ACHIEVEMENTS);
+    if (achievementSort === 'earned') {
+        achievementsList.sort((a, b) => {
+            const aEarned = earnedIds.has(a.id) ? 1 : 0;
+            const bEarned = earnedIds.has(b.id) ? 1 : 0;
+            return bEarned - aEarned; // Earned first
+        });
+    } else if (achievementSort === 'locked') {
+        achievementsList.sort((a, b) => {
+            const aEarned = earnedIds.has(a.id) ? 1 : 0;
+            const bEarned = earnedIds.has(b.id) ? 1 : 0;
+            return aEarned - bEarned; // Locked first
+        });
+    }
+    // For 'category', keep original order
     
     let html = `
         <div class="achievements-header">
@@ -369,7 +399,7 @@ function displayAchievementsModal(movies) {
         <div class="achievements-grid">
     `;
     
-    for (const achievement of Object.values(ACHIEVEMENTS)) {
+    for (const achievement of achievementsList) {
         const isEarned = earnedIds.has(achievement.id);
         html += `
             <div class="achievement-item ${isEarned ? 'earned' : 'locked'}">
@@ -378,7 +408,7 @@ function displayAchievementsModal(movies) {
                 </div>
                 <div class="achievement-item-info">
                     <div class="achievement-item-name">${achievement.name}</div>
-                    <div class="achievement-item-desc">${achievement.description}</div>
+                    ${achievementHints ? `<div class="achievement-item-desc">${achievement.description}</div>` : ''}
                 </div>
                 ${isEarned ? '<div class="achievement-checkmark"><i class="fas fa-check"></i></div>' : '<div class="achievement-lock"><i class="fas fa-lock"></i></div>'}
             </div>
