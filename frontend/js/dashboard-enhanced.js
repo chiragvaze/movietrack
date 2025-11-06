@@ -58,6 +58,94 @@ let searchQuery = '';
 let selectedGenre = null;
 let currentSort = 'title-asc'; // Default sort
 
+// Load user settings on page load
+function loadUserSettings() {
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    
+    if (settings) {
+        // Apply default filter if set
+        if (settings.defaultFilter) {
+            currentFilter = settings.defaultFilter;
+        }
+        
+        // Apply default sort if set
+        if (settings.defaultSort) {
+            // Convert settings format to dashboard format
+            const sortMap = {
+                'dateAdded': 'date-desc',
+                'title': 'title-asc',
+                'year': 'year-desc',
+                'rating': 'rating-desc'
+            };
+            currentSort = sortMap[settings.defaultSort] || currentSort;
+        }
+        
+        // Apply default dashboard section if set
+        if (settings.defaultDashboard && settings.defaultDashboard !== 'movies') {
+            // Wait for DOM and data to load before opening sections
+            setTimeout(() => {
+                switch (settings.defaultDashboard) {
+                    case 'analytics':
+                        if (typeof openAnalytics === 'function') {
+                            openAnalytics();
+                        }
+                        break;
+                    case 'achievements':
+                        if (typeof displayAchievementsModal === 'function' && movies) {
+                            displayAchievementsModal(movies);
+                        }
+                        break;
+                    case 'recommendations':
+                        // Scroll to recommendations section if visible
+                        const recsSection = document.getElementById('recommendationsSection');
+                        if (recsSection && recsSection.style.display !== 'none') {
+                            recsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                        break;
+                }
+            }, 1000); // Wait for movies to load
+        }
+    }
+}
+
+// Apply user settings to UI elements
+function applyUserSettingsToUI() {
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    
+    // Apply filter button active state
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+        if (btn.dataset.filter === currentFilter) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Apply sort dropdown value
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        sortSelect.value = currentSort;
+    }
+    
+    // Apply section visibility settings
+    if (settings) {
+        // Hide/show quick stats section
+        const quickStatsSection = document.querySelector('.dashboard-stats');
+        if (quickStatsSection && settings.showQuickStats === false) {
+            quickStatsSection.style.display = 'none';
+        }
+        
+        // Hide/show recommendations section
+        const recommendationsSection = document.getElementById('recommendationsSection');
+        if (recommendationsSection && settings.showRecommendations === false) {
+            recommendationsSection.style.display = 'none';
+        }
+        
+        // Note: Analytics and Recent are modals/dynamic content, handled elsewhere
+    }
+}
+
 /**
  * Custom confirmation dialog
  */
@@ -1911,6 +1999,7 @@ window.showSidebarMovieDetails = async function(tmdbId, mediaType) {
 }
 
 // Initialize
+loadUserSettings(); // Load user settings first
 loadMovies();
 initSearch();
 initTMDBSearch();
@@ -1925,6 +2014,9 @@ window.quickAddAsWatched = quickAddAsWatched;
 
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Apply user settings to UI once DOM is ready
+    applyUserSettingsToUI();
+    
     // Back to Top Button
     const backToTopBtn = document.getElementById('backToTopBtn');
     if (backToTopBtn) {
