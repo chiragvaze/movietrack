@@ -768,6 +768,7 @@ function renderMovies() {
     container.innerHTML = filteredMovies.map(movie => `
         <div class="movie-card" data-id="${movie._id}" onclick="showMovieDetails('${movie._id}')">
             ${movie.poster ? `<img src="${movie.poster}" alt="${movie.title}" class="movie-poster" onerror="console.error('❌ Failed to load poster:', '${movie.poster}')">` : `<div class="movie-poster-placeholder">${movie.type === 'tv' ? '📺' : '🎬'}</div>`}
+            ${showRuntime && movie.runtime ? `<div class="movie-runtime-badge"><i class="fas fa-clock"></i> ${movie.runtime} min</div>` : ''}
             <div class="movie-content">
                 <div class="movie-header">
                     <h4 class="movie-title">
@@ -779,7 +780,6 @@ function renderMovies() {
                 <div class="movie-info">
                     <span class="movie-status status-${movie.status}">${movie.status}</span>
                     <span class="movie-rating">${movie.rating > 0 ? '⭐'.repeat(movie.rating) : 'Not rated'}</span>
-                    ${showRuntime && movie.runtime ? `<span class="movie-runtime"><i class="fas fa-clock"></i> ${movie.runtime} min</span>` : ''}
                 </div>
                 ${movie.type === 'tv' && movie.currentSeason ? `
                     <div class="tv-progress">
