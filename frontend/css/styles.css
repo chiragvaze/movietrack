@@ -1804,23 +1804,26 @@ input[type="date"]:focus {
 
 .recommendations-carousel {
     width: 100%;
+    overflow: visible; /* Allow cards to expand beyond container */
 }
 
 .recommendation-card {
-    flex: 0 0 180px;
-    min-width: 180px;
+    flex: 0 0 150px;
+    min-width: 150px;
+    height: 225px;
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
     overflow: hidden;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border-color);
     position: relative;
+    margin: 8px 0; /* Add vertical margin to prevent clipping */
 }
 
 .recommendation-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 8px 30px rgba(229, 9, 20, 0.4);
+    transform: scale(1.03) translateY(-2px); /* Further reduced scale and lift */
+    box-shadow: 0 8px 30px rgba(229, 9, 20, 0.5);
     border-color: var(--primary-color);
     z-index: 10;
 }
@@ -1831,7 +1834,7 @@ input[type="date"]:focus {
 
 .recommendation-poster {
     width: 100%;
-    height: 270px;
+    height: 100%;
     object-fit: cover;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     display: block;
@@ -1842,26 +1845,40 @@ input[type="date"]:focus {
     top: 0;
     left: 0;
     right: 0;
-    padding: 10px;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
+    bottom: 0;
+    padding: 12px;
+    background: linear-gradient(to bottom, 
+        rgba(0,0,0,0.95) 0%, 
+        rgba(0,0,0,0.85) 40%,
+        rgba(0,0,0,0.75) 70%,
+        rgba(0,0,0,0.9) 100%);
     opacity: 0;
-    transition: var(--transition);
+    transition: opacity 0.3s ease;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .rec-reason {
     color: var(--primary-color);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    padding: 6px 8px;
+    background: rgba(229, 9, 20, 0.15);
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    width: fit-content;
 }
 
 .rec-section {
     margin-bottom: 2.5rem;
     width: 100%;
     display: block;
+    overflow: visible; /* Allow cards to expand on hover */
 }
 
 .rec-section:last-child {
@@ -1886,10 +1903,11 @@ input[type="date"]:focus {
 
 .rec-grid {
     display: flex;
-    gap: 1.2rem;
+    gap: 0.8rem;
     overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 1rem;
+    overflow-y: visible; /* Changed from hidden to visible to allow hover scale */
+    padding: 1rem 0 1.5rem 0; /* Increased padding to give room for hover expansion */
+    margin: -8px 0; /* Negative margin to offset card margins */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     cursor: grab;
@@ -1919,34 +1937,55 @@ input[type="date"]:focus {
 }
 
 .recommendation-info {
-    padding: 0.8rem;
-    background: var(--bg-secondary);
+    padding: 0;
+    background: transparent;
 }
 
 .recommendation-title {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.3;
-    min-height: 2.6rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
 .recommendation-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
+    gap: 8px;
 }
 
 .recommendation-year {
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.9);
     font-weight: 500;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+}
+
+.recommendation-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #ffd700;
+    font-weight: 600;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+}
+
+.recommendation-rating i {
+    font-size: 0.7rem;
 }
 
 .recommendation-rating {
@@ -3641,7 +3680,22 @@ footer {
     }
     
     .recommendation-card {
-        padding: 0.8rem;
+        flex: 0 0 120px;
+        min-width: 120px;
+        height: 180px;
+    }
+    
+    .recommendation-title {
+        font-size: 0.85rem !important;
+    }
+    
+    .recommendation-meta {
+        font-size: 0.7rem !important;
+    }
+    
+    .rec-reason {
+        font-size: 0.6rem !important;
+        padding: 4px 6px !important;
     }
     
     /* Typography adjustments */

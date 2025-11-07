@@ -439,20 +439,20 @@ async function getSmartRecommendations(userProfile) {
     const recGenreBased = settings.recGenreBased !== false; // Default true
     const recTrending = settings.recTrending !== false; // Default true
     const recMinRating = settings.recMinRating || 7;
-    const recPerSection = settings.recPerSection || 10;
+    const recPerSection = settings.recPerSection || 20; // Increased from 10 to 20
     
     // Strategy 1: "Because you watched..." - Similar to top-rated items
     if (recContentBased) {
         console.log('🎯 Strategy 1: Based on top-rated content...');
-        const itemsToCheck = Math.min(userProfile.topRatedMovies.length, 3);
+        const itemsToCheck = Math.min(userProfile.topRatedMovies.length, 5); // Increased from 3 to 5
         for (let i = 0; i < itemsToCheck; i++) {
             const item = userProfile.topRatedMovies[i];
             try {
                 let recs;
                 if (item.type === 'tv') {
-                    recs = await TMDB.getTVRecommendations(item.tmdbId, Math.min(recPerSection, 5));
+                    recs = await TMDB.getTVRecommendations(item.tmdbId, 10); // Increased from 5 to 10
                 } else {
-                    recs = await TMDB.getMovieRecommendations(item.tmdbId, Math.min(recPerSection, 5));
+                    recs = await TMDB.getMovieRecommendations(item.tmdbId, 10); // Increased from 5 to 10
                 }
                 
                 recs.forEach(rec => {
@@ -485,7 +485,7 @@ async function getSmartRecommendations(userProfile) {
                 const genreRecs = await TMDB.discoverByGenre(
                     userProfile.preferredType === 'movie' ? 'movie' : 'tv',
                     genreId,
-                    Math.min(recPerSection, 10)
+                    20 // Increased from 10 to 20
                 );
                 
                 genreRecs.forEach(rec => {
@@ -504,7 +504,7 @@ async function getSmartRecommendations(userProfile) {
     if (recTrending) {
         console.log('📈 Strategy 3: Trending content...');
         try {
-            const trending = await TMDB.getTrending(userProfile.preferredType, 'week', Math.min(recPerSection, 10));
+            const trending = await TMDB.getTrending(userProfile.preferredType, 'week', 20); // Increased from 10 to 20
             trending.forEach(rec => {
                 rec.reason = 'Trending now';
                 rec.strategy = 'trending';
@@ -558,8 +558,10 @@ async function getSmartRecommendations(userProfile) {
         uniqueRecommendations = uniqueRecommendations.filter(rec => rec.strategy !== 'similar');
     }
     
-    // Limit to total recommendations setting
-    uniqueRecommendations = uniqueRecommendations.slice(0, Math.min(recPerSection * 2, 20));
+    // Don't limit total - let each section show its own recommendations
+    // uniqueRecommendations = uniqueRecommendations.slice(0, Math.min(recPerSection * 2, 20)); // REMOVED THIS LINE
+    
+    console.log(`✅ Final recommendations: ${uniqueRecommendations.length} total`);
     
     return uniqueRecommendations;
 }
@@ -574,6 +576,12 @@ function displayRecommendations(recommendations, userProfile) {
     const similarRecs = recommendations.filter(r => r.strategy === 'similar');
     const genreRecs = recommendations.filter(r => r.strategy === 'genre');
     const trendingRecs = recommendations.filter(r => r.strategy === 'trending');
+    
+    console.log(`📊 Recommendation breakdown:
+        - Similar: ${similarRecs.length}
+        - Genre: ${genreRecs.length}
+        - Trending: ${trendingRecs.length}
+        - Total: ${recommendations.length}`);
     
     let html = '';
     
@@ -675,15 +683,15 @@ function createRecommendationCard(rec) {
             >
             <div class="recommendation-overlay">
                 <div class="rec-reason">${rec.reason}</div>
-            </div>
-            <div class="recommendation-info">
-                <div class="recommendation-title">${rec.title}</div>
-                <div class="recommendation-meta">
-                    <span class="recommendation-year">${rec.year || 'N/A'}</span>
-                    <span class="recommendation-rating">
-                        <i class="fas fa-star"></i>
-                        ${rec.rating ? rec.rating.toFixed(1) : 'N/A'}
-                    </span>
+                <div class="recommendation-info">
+                    <div class="recommendation-title">${rec.title}</div>
+                    <div class="recommendation-meta">
+                        <span class="recommendation-year">${rec.year || 'N/A'}</span>
+                        <span class="recommendation-rating">
+                            <i class="fas fa-star"></i>
+                            ${rec.rating ? rec.rating.toFixed(1) : 'N/A'}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
