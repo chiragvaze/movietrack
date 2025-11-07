@@ -2859,8 +2859,11 @@ footer {
     border-radius: var(--border-radius);
     width: 90%;
     max-width: 500px;
+    max-height: 90vh; /* Limit height to viewport */
+    overflow-y: auto; /* Enable scrolling */
     box-shadow: var(--shadow-lg);
     animation: slideDown 0.3s ease;
+    position: relative;
 }
 
 @keyframes slideDown {
@@ -2870,7 +2873,7 @@ footer {
 
 .modal-large .modal-content {
     max-width: 900px;
-    overflow: hidden;
+    overflow-y: auto; /* Enable scrolling for large modals */
 }
 
 .modal-content h2 {
@@ -2887,17 +2890,28 @@ footer {
 
 .close {
     color: var(--text-secondary);
-    float: right;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
     transition: var(--transition);
     line-height: 1;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.5);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
 .close:hover,
 .close:focus {
     color: var(--primary-color);
+    background: rgba(229, 9, 20, 0.8);
 }
 
 .modal-profile .close {
@@ -3559,12 +3573,38 @@ footer {
     }
     
     /* Modal mobile optimization */
+    .modal {
+        z-index: 10000 !important; /* Ensure modal is above everything */
+        overflow-y: auto; /* Allow scrolling on mobile */
+    }
+    
     .modal-content {
         width: 95%;
         margin: 5% auto;
         max-height: 90vh;
         overflow-y: auto;
         padding: 1rem !important;
+        position: relative;
+        z-index: 10001;
+    }
+    
+    /* Hide backdrop image on mobile to save space and improve performance */
+    .modal-backdrop {
+        display: none !important;
+    }
+    
+    .close {
+        font-size: 2rem !important;
+        padding: 0.5rem !important;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        top: 10px !important;
+        right: 10px !important;
     }
     
     .modal-header {
@@ -3583,6 +3623,10 @@ footer {
     }
     
     /* Movie Details Modal - Mobile Optimization */
+    .modal-body {
+        padding: 0 !important; /* Remove extra padding since no backdrop */
+    }
+    
     .movie-details-grid {
         grid-template-columns: 1fr !important;
         gap: 1rem !important;
@@ -3683,49 +3727,48 @@ footer {
         flex: 0 0 120px;
         min-width: 120px;
         height: 180px;
+        margin: 4px 0; /* Reduced margin for mobile */
     }
     
-    /* Show overlay by default on mobile since hover doesn't work */
+    /* Show overlay on tap/touch for mobile */
+    .recommendation-card:active .recommendation-overlay {
+        opacity: 1 !important;
+    }
+    
+    /* Make overlay slightly visible by default on mobile so users know it's interactive */
     .recommendation-card .recommendation-overlay {
-        opacity: 1;
-        background: linear-gradient(to bottom, 
-            transparent 0%, 
-            transparent 30%,
-            rgba(0,0,0,0.75) 70%,
-            rgba(0,0,0,0.95) 100%);
+        opacity: 0.15;
+        transition: opacity 0.2s ease;
     }
     
-    /* Hide rec-reason on mobile by default, show on tap */
-    .recommendation-card .rec-reason {
-        opacity: 0;
-        font-size: 0.6rem !important;
-        padding: 4px 6px !important;
-    }
-    
-    .recommendation-card:active .rec-reason,
-    .recommendation-card.tapped .rec-reason {
-        opacity: 1;
-    }
-    
-    /* Make info section more prominent on mobile */
-    .recommendation-info {
+    .recommendation-card:hover .recommendation-overlay,
+    .recommendation-card:active .recommendation-overlay {
         opacity: 1 !important;
     }
     
     .recommendation-title {
-        font-size: 0.85rem !important;
+        font-size: 0.8rem !important;
         -webkit-line-clamp: 2;
-        line-height: 1.2;
+        line-clamp: 2;
     }
     
     .recommendation-meta {
-        font-size: 0.7rem !important;
+        font-size: 0.65rem !important;
+    }
+    
+    .rec-reason {
+        font-size: 0.55rem !important;
+        padding: 4px 6px !important;
     }
     
     .recommendation-year,
     .recommendation-rating {
-        font-size: 0.65rem !important;
         padding: 2px 6px !important;
+        font-size: 0.65rem !important;
+    }
+    
+    .recommendation-rating i {
+        font-size: 0.6rem !important;
     }
     
     /* Typography adjustments */

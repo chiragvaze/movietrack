@@ -673,8 +673,13 @@ function initRecommendationScroll() {
  * Creates a recommendation card HTML
  */
 function createRecommendationCard(rec) {
+    const cardId = `rec-card-${rec.tmdbId}`;
     return `
-        <div class="recommendation-card" onclick="openRecommendationDetails('${rec.tmdbId}', '${rec.type}')">
+        <div class="recommendation-card" 
+             id="${cardId}"
+             data-tmdb-id="${rec.tmdbId}" 
+             data-type="${rec.type}"
+             onclick="openRecommendationDetails('${rec.tmdbId}', '${rec.type}')">
             <img 
                 src="${rec.poster || 'https://via.placeholder.com/200x300?text=No+Poster'}" 
                 alt="${rec.title}"
@@ -697,6 +702,22 @@ function createRecommendationCard(rec) {
         </div>
     `;
 }
+
+// Handle touch interactions for showing overlay on mobile
+document.addEventListener('DOMContentLoaded', function() {
+    // Add CSS to show overlay on tap for mobile devices
+    const style = document.createElement('style');
+    style.textContent = `
+        @media (hover: none) and (pointer: coarse) {
+            /* Mobile devices - tap to show info */
+            .recommendation-card:active .recommendation-overlay {
+                opacity: 1 !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+});
+
 
 // Open recommendation details and allow quick add
 async function openRecommendationDetails(tmdbId, type) {
@@ -1325,7 +1346,15 @@ function showMovieDetails(movieId) {
     if (!movie) return;
     
     const modal = createDetailsModal(movie);
+    modal.style.display = 'block'; // Make modal visible
     document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.remove();
+        }
+    });
 }
 
 function createDetailsModal(movie) {
@@ -1382,6 +1411,7 @@ function getSpoilerAttributes() {
 function showRecommendationModal(details) {
     const modal = document.createElement('div');
     modal.className = 'modal modal-large';
+    modal.style.display = 'block'; // Make modal visible
     
     const posterPlaceholder = details.type === 'tv' ? '📺' : '🎬';
     const posterHtml = details.poster 
@@ -1432,6 +1462,13 @@ function showRecommendationModal(details) {
         </div>
     `;
     document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.remove();
+        }
+    });
 }
 
 // Quick add to watchlist
