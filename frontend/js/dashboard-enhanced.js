@@ -768,7 +768,13 @@ function renderMovies() {
     container.innerHTML = filteredMovies.map(movie => `
         <div class="movie-card" data-id="${movie._id}" onclick="showMovieDetails('${movie._id}')">
             ${movie.poster ? `<img src="${movie.poster}" alt="${movie.title}" class="movie-poster" onerror="console.error('❌ Failed to load poster:', '${movie.poster}')">` : `<div class="movie-poster-placeholder">${movie.type === 'tv' ? '📺' : '🎬'}</div>`}
-            ${showRuntime && movie.runtime ? `<div class="movie-runtime-badge"><i class="fas fa-clock"></i> ${movie.runtime} min</div>` : ''}
+            ${showRuntime ? (
+                movie.type === 'tv' && movie.numberOfSeasons ? 
+                    `<div class="movie-runtime-badge"><i class="fas fa-tv"></i> ${movie.numberOfSeasons} Season${movie.numberOfSeasons > 1 ? 's' : ''}</div>` :
+                movie.runtime ? 
+                    `<div class="movie-runtime-badge"><i class="fas fa-clock"></i> ${movie.runtime} min</div>` : 
+                    ''
+            ) : ''}
             <div class="movie-content">
                 <div class="movie-header">
                     <h4 class="movie-title">
