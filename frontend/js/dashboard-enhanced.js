@@ -804,7 +804,35 @@ function renderMovies() {
                     `<div class="movie-runtime-badge"><i class="fas fa-clock"></i> ${movie.runtime} min</div>` : 
                     ''
             ) : ''}
-            <div class="movie-content">
+            ${movie.streamingServices && movie.streamingServices.length > 0 ? `
+                <div class="streaming-badges-overlay">
+                    ${movie.streamingServices.slice(0, 3).map(service => {
+                        const icons = {
+                            'Netflix': 'fab fa-netflix',
+                            'Amazon Prime': 'fab fa-amazon',
+                            'Disney+': 'fas fa-film',
+                            'HBO Max': 'fas fa-play',
+                            'Hulu': 'fas fa-tv',
+                            'Apple TV+': 'fab fa-apple',
+                            'Other': 'fas fa-play-circle'
+                        };
+                        const colors = {
+                            'Netflix': '#E50914',
+                            'Amazon Prime': '#00A8E1',
+                            'Disney+': '#113CCF',
+                            'HBO Max': '#9333EA',
+                            'Hulu': '#1CE783',
+                            'Apple TV+': '#000000',
+                            'Other': '#6B7280'
+                        };
+                        const icon = icons[service.service] || 'fas fa-play-circle';
+                        const color = colors[service.service] || '#6B7280';
+                        return `<span class="stream-badge" style="background-color: ${color}" title="${service.service}"><i class="${icon}"></i></span>`;
+                    }).join('')}
+                    ${movie.streamingServices.length > 3 ? `<span class="stream-badge-more">+${movie.streamingServices.length - 3}</span>` : ''}
+                </div>
+            ` : ''}
+            <div class="movie-content"
                 <div class="movie-header">
                     <h4 class="movie-title">
                         ${movie.type === 'tv' ? '<span class="type-badge">📺</span>' : ''}
@@ -827,6 +855,12 @@ function renderMovies() {
                         ${movie.genre.slice(0, 3).map(g => `<span class="genre-badge">${g}</span>`).join('')}
                     </div>
                 ` : ''}
+                ${movie.customTags && movie.customTags.length > 0 ? `
+                    <div class="movie-tags-container">
+                        ${movie.customTags.slice(0, 2).map(tag => `<span class="tag-badge-display">${tag}</span>`).join('')}
+                        ${movie.customTags.length > 2 ? `<span class="tag-more">+${movie.customTags.length - 2}</span>` : ''}
+                    </div>
+                ` : ''}
                 ${movie.watchedDate && movie.status === 'watched' ? `
                     <div class="watched-date">
                         <i class="fas fa-calendar"></i> Watched: ${new Date(movie.watchedDate).toLocaleDateString()}
@@ -840,6 +874,14 @@ function renderMovies() {
                     </div>
                 ` : ''}
                 <div class="movie-actions" onclick="event.stopPropagation()">
+                    <button class="btn-icon" onclick="addTagToMovie('${movie._id}')" title="Add Tag">
+                        <i class="fas fa-tag"></i>
+                    </button>
+                    ${movie.type === 'tv' ? `
+                        <button class="btn-icon" onclick="initEpisodeTracker('${movie._id}')" title="Track Episodes">
+                            <i class="fas fa-list-check"></i>
+                        </button>
+                    ` : ''}
                     <button class="btn-icon" onclick="editMovie('${movie._id}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -2932,4 +2974,236 @@ function generateRecentList(movies) {
             </div>
         `;
     }).join('');
+}
+
+// =====================================
+// TAGGING FUNCTIONALITY
+// =====================================
+
+/**
+ * Opens modal to add tags to a movie
+ */
+function addTagToMovie(movieId) {
+    const movie = movies.find(m => m._id === movieId);
+    if (!movie) {
+        showToast('Movie not found', 'error');
+        return;
+    }
+    
+    const existingTags = movie.customTags || [];
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-tags"></i> Add Tags to "${movie.title}"</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                ${existingTags.length > 0 ? `
+                    <div class="current-tags">
+                        <h4>Current Tags:</h4>
+                        <div class="tags-list">
+                            ${existingTags.map(tag => `
+                                <span class="tag-badge">
+                                    ${tag}
+                                    <button class="remove-tag-btn" onclick="removeTagFromMovie('${movieId}', '${tag}', this)" title="Remove tag">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <hr style="margin: 1rem 0; border-color: var(--bg-secondary);">
+                ` : ''}
+                
+                <div class="add-tag-section">
+                    <h4>Add New Tag:</h4>
+                    <div class="tag-input-group">
+                        <input type="text" 
+                               id="newTagInput" 
+                               placeholder="Enter tag name (e.g., Action Favorites, Date Night)" 
+                               class="form-input"
+                               style="flex: 1;">
+                        <button onclick="submitNewTag('${movieId}')" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Tag
+                        </button>
+                    </div>
+                    <p class="hint-text" style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                        <i class="fas fa-info-circle"></i> Press Enter to quickly add a tag
+                    </p>
+                </div>
+                
+                <div class="suggested-tags" style="margin-top: 1.5rem;">
+                    <h4>Quick Tags:</h4>
+                    <div class="quick-tags-list">
+                        ${['Favorites', 'Watch Later', 'Must Rewatch', 'Date Night', 'Family Friendly', 'Mind-Bending'].map(tag => 
+                            !existingTags.includes(tag) ? `
+                                <button class="quick-tag-btn" onclick="addQuickTag('${movieId}', '${tag}')">
+                                    ${tag}
+                                </button>
+                            ` : ''
+                        ).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close modal handlers
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => {
+        modal.remove();
+    };
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    };
+    
+    // Focus on input
+    setTimeout(() => {
+        const input = document.getElementById('newTagInput');
+        input.focus();
+        
+        // Enter key to add tag
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitNewTag(movieId);
+            }
+        });
+    }, 100);
+}
+
+/**
+ * Submit a new tag for a movie
+ */
+async function submitNewTag(movieId) {
+    const input = document.getElementById('newTagInput');
+    const tagName = input.value.trim();
+    
+    if (!tagName) {
+        showToast('Please enter a tag name', 'error');
+        return;
+    }
+    
+    try {
+        const movie = movies.find(m => m._id === movieId);
+        if (!movie) {
+            showToast('Movie not found', 'error');
+            return;
+        }
+        
+        // Check if tag already exists
+        if (movie.customTags && movie.customTags.includes(tagName)) {
+            showToast('Tag already exists on this movie', 'error');
+            return;
+        }
+        
+        // Add tag to movie
+        const updatedTags = [...(movie.customTags || []), tagName];
+        
+        const response = await API.updateMovie(movieId, { customTags: updatedTags });
+        
+        if (response.success) {
+            // Update local movie data
+            movie.customTags = updatedTags;
+            
+            showToast(`Tag "${tagName}" added successfully!`, 'success');
+            
+            // Close modal and refresh display
+            document.querySelector('.modal').remove();
+            renderMovies();
+        } else {
+            showToast('Failed to add tag', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding tag:', error);
+        showToast('Error adding tag', 'error');
+    }
+}
+
+/**
+ * Add a quick tag (from suggestions)
+ */
+async function addQuickTag(movieId, tagName) {
+    try {
+        const movie = movies.find(m => m._id === movieId);
+        if (!movie) {
+            showToast('Movie not found', 'error');
+            return;
+        }
+        
+        // Add tag to movie
+        const updatedTags = [...(movie.customTags || []), tagName];
+        
+        const response = await API.updateMovie(movieId, { customTags: updatedTags });
+        
+        if (response.success) {
+            // Update local movie data
+            movie.customTags = updatedTags;
+            
+            showToast(`Tag "${tagName}" added!`, 'success');
+            
+            // Close modal and refresh display
+            document.querySelector('.modal').remove();
+            renderMovies();
+        } else {
+            showToast('Failed to add tag', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding tag:', error);
+        showToast('Error adding tag', 'error');
+    }
+}
+
+/**
+ * Remove a tag from a movie
+ */
+async function removeTagFromMovie(movieId, tagName, buttonElement) {
+    try {
+        const movie = movies.find(m => m._id === movieId);
+        if (!movie) {
+            showToast('Movie not found', 'error');
+            return;
+        }
+        
+        // Remove tag from movie
+        const updatedTags = (movie.customTags || []).filter(t => t !== tagName);
+        
+        const response = await API.updateMovie(movieId, { customTags: updatedTags });
+        
+        if (response.success) {
+            // Update local movie data
+            movie.customTags = updatedTags;
+            
+            showToast(`Tag "${tagName}" removed`, 'success');
+            
+            // Remove tag badge from UI
+            buttonElement.closest('.tag-badge').remove();
+            
+            // If no tags left, remove the current tags section
+            if (updatedTags.length === 0) {
+                const currentTagsSection = document.querySelector('.current-tags');
+                if (currentTagsSection) {
+                    currentTagsSection.nextElementSibling.remove(); // Remove hr
+                    currentTagsSection.remove();
+                }
+            }
+            
+            // Refresh display
+            renderMovies();
+        } else {
+            showToast('Failed to remove tag', 'error');
+        }
+    } catch (error) {
+        console.error('Error removing tag:', error);
+        showToast('Error removing tag', 'error');
+    }
 }
