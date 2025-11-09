@@ -8899,7 +8899,7 @@ body[data-font-size="xlarge"] h3 { font-size: 2rem; }
 
 .tag-badge-display {
     display: inline-block;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #272525 0%, #fa0000 100%);
     color: white;
     padding: 0.3rem 0.6rem;
     border-radius: 15px;
@@ -8946,7 +8946,7 @@ body[data-font-size="xlarge"] h3 { font-size: 2rem; }
 }
 
 .quick-tag-btn:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #181a22 0%, #764ba2 100%);
     color: white;
     border-color: transparent;
     transform: translateY(-2px);
