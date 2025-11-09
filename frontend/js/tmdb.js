@@ -3,11 +3,29 @@ const TMDB_CONFIG = {
     API_KEY: '409d37969fa9cdbc46f0baf72ff9c6d2', // Replace with your actual API key
     BASE_URL: 'https://api.themoviedb.org/3',
     IMAGE_BASE_URL: 'https://image.tmdb.org/t/p',
-    POSTER_SIZE: 'w500',
+    POSTER_SIZE: 'w500', // Default, will be overridden by user settings
     BACKDROP_SIZE: 'w1280',
     TIMEOUT: 30000, // 30 seconds - within browser limits
     MAX_RETRIES: 2 // Try 3 times total (initial + 2 retries) for slow connections
 };
+
+// Get poster size based on user settings
+function getPosterSize() {
+    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+    const quality = settings.posterQuality || 'medium';
+    
+    // TMDB poster sizes: w92, w154, w185, w342, w500, w780, original
+    switch(quality) {
+        case 'low':
+            return 'w185';  // Small, fast loading
+        case 'medium':
+            return 'w342';  // Balanced quality/size
+        case 'high':
+            return 'w780';  // High quality, larger files
+        default:
+            return 'w342';
+    }
+}
 
 // Simple in-memory cache for search results
 const searchCache = new Map();
@@ -88,7 +106,13 @@ const TMDB = {
             return { results: [], loading: false };
         }
         
-        const cacheKey = `movie_${query.toLowerCase()}`;
+        // Get user settings for language, region, and adult content
+        const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+        const language = settings.defaultLanguage || 'en';
+        const region = settings.defaultRegion || 'US';
+        const includeAdult = settings.adultContent || false;
+        
+        const cacheKey = `movie_${query.toLowerCase()}_${language}_${region}_${includeAdult}`;
         
         // Check localStorage cache first (persists across page reloads)
         const localCached = getCachedSearch(cacheKey);
@@ -108,7 +132,7 @@ const TMDB = {
             if (onLoading) onLoading(true);
             
             const response = await fetchWithTimeout(
-                `${TMDB_CONFIG.BASE_URL}/search/movie?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`,
+                `${TMDB_CONFIG.BASE_URL}/search/movie?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=${language}-${region}&region=${region}&include_adult=${includeAdult}&page=1`,
                 {},
                 TMDB_CONFIG.TIMEOUT,
                 TMDB_CONFIG.MAX_RETRIES,
@@ -153,7 +177,13 @@ const TMDB = {
             return { results: [], loading: false };
         }
         
-        const cacheKey = `tv_${query.toLowerCase()}`;
+        // Get user settings for language, region, and adult content
+        const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+        const language = settings.defaultLanguage || 'en';
+        const region = settings.defaultRegion || 'US';
+        const includeAdult = settings.adultContent || false;
+        
+        const cacheKey = `tv_${query.toLowerCase()}_${language}_${region}_${includeAdult}`;
         
         // Check localStorage cache first
         const localCached = getCachedSearch(cacheKey);
@@ -173,7 +203,7 @@ const TMDB = {
             if (onLoading) onLoading(true);
             
             const response = await fetchWithTimeout(
-                `${TMDB_CONFIG.BASE_URL}/search/tv?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`,
+                `${TMDB_CONFIG.BASE_URL}/search/tv?api_key=${TMDB_CONFIG.API_KEY}&query=${encodeURIComponent(query)}&language=${language}-${region}&include_adult=${includeAdult}&page=1`,
                 {},
                 TMDB_CONFIG.TIMEOUT,
                 TMDB_CONFIG.MAX_RETRIES,
@@ -286,7 +316,7 @@ const TMDB = {
             title: tmdbMovie.title,
             year: tmdbMovie.release_date ? new Date(tmdbMovie.release_date).getFullYear() : null,
             poster: tmdbMovie.poster_path 
-                ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.POSTER_SIZE}${tmdbMovie.poster_path}`
+                ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${getPosterSize()}${tmdbMovie.poster_path}`
                 : null,
             backdrop: tmdbMovie.backdrop_path
                 ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.BACKDROP_SIZE}${tmdbMovie.backdrop_path}`
@@ -318,7 +348,7 @@ const TMDB = {
             title: tmdbTV.name,
             year: tmdbTV.first_air_date ? new Date(tmdbTV.first_air_date).getFullYear() : null,
             poster: tmdbTV.poster_path 
-                ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.POSTER_SIZE}${tmdbTV.poster_path}`
+                ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${getPosterSize()}${tmdbTV.poster_path}`
                 : null,
             backdrop: tmdbTV.backdrop_path
                 ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.BACKDROP_SIZE}${tmdbTV.backdrop_path}`
@@ -370,7 +400,7 @@ const TMDB = {
                 title: movie.title,
                 year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
                 poster: movie.poster_path 
-                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.POSTER_SIZE}${movie.poster_path}`
+                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${getPosterSize()}${movie.poster_path}`
                     : null,
                 rating: movie.vote_average || 0,
                 type: 'movie'
@@ -398,7 +428,7 @@ const TMDB = {
                 title: show.name,
                 year: show.first_air_date ? new Date(show.first_air_date).getFullYear() : null,
                 poster: show.poster_path 
-                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.POSTER_SIZE}${show.poster_path}`
+                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${getPosterSize()}${show.poster_path}`
                     : null,
                 rating: show.vote_average || 0,
                 type: 'tv'
@@ -428,7 +458,7 @@ const TMDB = {
                     ? new Date(item.release_date || item.first_air_date).getFullYear() 
                     : null,
                 poster: item.poster_path 
-                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.POSTER_SIZE}${item.poster_path}`
+                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${getPosterSize()}${item.poster_path}`
                     : null,
                 rating: item.vote_average || 0,
                 type: item.media_type || mediaType
@@ -458,7 +488,7 @@ const TMDB = {
                     ? new Date(item.release_date || item.first_air_date).getFullYear() 
                     : null,
                 poster: item.poster_path 
-                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${TMDB_CONFIG.POSTER_SIZE}${item.poster_path}`
+                    ? `${TMDB_CONFIG.IMAGE_BASE_URL}/${getPosterSize()}${item.poster_path}`
                     : null,
                 rating: item.vote_average || 0,
                 type: mediaType

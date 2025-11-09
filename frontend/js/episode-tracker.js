@@ -1,9 +1,30 @@
 // Episode Tracker for TV Shows
 let currentShowId = null;
 let currentShowTitle = null;
+let currentShowTmdbId = null;
 let watchedEpisodesData = [];
 
-function showEpisodeTracker(movieId, movieTitle, watchedEpisodes = []) {
+// Initialize episode tracker from dashboard
+async function initEpisodeTracker(movieId) {
+    try {
+        const movie = await API.getMovieById(movieId);
+        if (!movie || movie.type !== 'tv') {
+            alert('This feature is only available for TV shows');
+            return;
+        }
+        
+        showEpisodeTracker(movie._id, movie.title, movie.tmdbId, movie.watchedEpisodes || []);
+    } catch (error) {
+        console.error('Error initializing episode tracker:', error);
+        alert('Failed to load episode tracker');
+    }
+}
+
+function showEpisodeTracker(movieId, movieTitle, tmdbId, watchedEpisodes = []) {
+    currentShowId = movieId;
+    currentShowTitle = movieTitle;
+    currentShowTmdbId = tmdbId;
+    watchedEpisodesData = watchedEpisodes || [];
     currentShowId = movieId;
     currentShowTitle = movieTitle;
     watchedEpisodesData = watchedEpisodes || [];
@@ -99,7 +120,7 @@ async function loadEpisodes() {
     try {
         // Fetch episode data from TMDB
         const response = await fetch(
-            `https://api.themoviedb.org/3/tv/${currentShowId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`
+            `https://api.themoviedb.org/3/tv/${currentShowTmdbId}/season/${seasonNumber}?api_key=${TMDB_CONFIG.API_KEY}`
         );
         
         if (!response.ok) {
