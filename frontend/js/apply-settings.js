@@ -89,67 +89,8 @@
         // Apply grid settings
         applyGridSettings(settings);
         
-        // Apply ARIA labels if enabled
-        if (settings.ariaLabels !== false) {
-            applyAriaLabels();
-        }
-        
         // Store in window for other scripts to access
         window.userSettings = settings;
-    }
-    
-    // Function to apply ARIA labels
-    function applyAriaLabels() {
-        // Wait for DOM to be ready
-        const addLabels = () => {
-            // Add ARIA labels to buttons without them
-            document.querySelectorAll('button:not([aria-label])').forEach(btn => {
-                const text = btn.textContent.trim() || btn.title || '';
-                const icon = btn.querySelector('i');
-                if (icon) {
-                    const iconClass = icon.className;
-                    if (iconClass.includes('fa-edit')) btn.setAttribute('aria-label', 'Edit');
-                    else if (iconClass.includes('fa-trash')) btn.setAttribute('aria-label', 'Delete');
-                    else if (iconClass.includes('fa-plus')) btn.setAttribute('aria-label', 'Add');
-                    else if (iconClass.includes('fa-search')) btn.setAttribute('aria-label', 'Search');
-                    else if (iconClass.includes('fa-filter')) btn.setAttribute('aria-label', 'Filter');
-                    else if (iconClass.includes('fa-sort')) btn.setAttribute('aria-label', 'Sort');
-                    else if (text) btn.setAttribute('aria-label', text);
-                } else if (text) {
-                    btn.setAttribute('aria-label', text);
-                }
-            });
-            
-            // Add ARIA roles to custom components
-            document.querySelectorAll('.modal').forEach(modal => {
-                if (!modal.getAttribute('role')) {
-                    modal.setAttribute('role', 'dialog');
-                    modal.setAttribute('aria-modal', 'true');
-                }
-            });
-            
-            document.querySelectorAll('.movie-card').forEach(card => {
-                if (!card.getAttribute('role')) {
-                    card.setAttribute('role', 'article');
-                }
-            });
-            
-            // Add ARIA labels to form inputs without labels
-            document.querySelectorAll('input:not([aria-label]):not([id])').forEach(input => {
-                const placeholder = input.placeholder;
-                if (placeholder) {
-                    input.setAttribute('aria-label', placeholder);
-                }
-            });
-        };
-        
-        // Try immediately
-        addLabels();
-        
-        // Also try after DOM is loaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', addLabels);
-        }
     }
     
     // Listen for storage changes (when settings are updated in another tab)

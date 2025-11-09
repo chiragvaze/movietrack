@@ -279,19 +279,12 @@ function renderPage(page, clearGrid = false) {
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const pageResults = displayedResults.slice(startIndex, endIndex);
     
-    // Get poster size based on settings
-    const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
-    const quality = settings.posterQuality || 'medium';
-    let posterSize = 'w342';
-    if (quality === 'low') posterSize = 'w185';
-    else if (quality === 'high') posterSize = 'w780';
-    
     const html = pageResults.map(item => {
         const title = item.title || item.name;
         const year = (item.release_date || item.first_air_date || '').substring(0, 4);
         const rating = item.vote_average?.toFixed(1) || 'N/A';
         const poster = item.poster_path 
-            ? `https://image.tmdb.org/t/p/${posterSize}${item.poster_path}`
+            ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
             : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450"><rect fill="%232a2a2a" width="300" height="450"/><text fill="%23666" x="50%" y="50%" text-anchor="middle" font-size="20">No Image</text></svg>';
         
         // Create unique IDs for each item
@@ -375,19 +368,12 @@ async function showDetailsModal(id, mediaType) {
         );
         const data = await response.json();
         
-        // Get poster size based on settings
-        const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
-        const quality = settings.posterQuality || 'medium';
-        let posterSize = 'w342';
-        if (quality === 'low') posterSize = 'w185';
-        else if (quality === 'high') posterSize = 'w780';
-        
         const title = data.title || data.name;
         const year = (data.release_date || data.first_air_date || '').substring(0, 4);
         const rating = data.vote_average?.toFixed(1) || 'N/A';
         const overview = data.overview || 'No description available';
         const poster = data.poster_path 
-            ? `https://image.tmdb.org/t/p/${posterSize}${data.poster_path}`
+            ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
             : '';
         const genres = data.genres?.map(g => g.name).join(', ') || 'N/A';
         
@@ -804,14 +790,6 @@ window.addToList = async function(listType, tmdbId, mediaType, itemDataStr) {
         }
         
         // Prepare comprehensive movie data
-        
-        // Get poster size based on settings
-        const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
-        const quality = settings.posterQuality || 'medium';
-        let posterSize = 'w342';
-        if (quality === 'low') posterSize = 'w185';
-        else if (quality === 'high') posterSize = 'w780';
-        
         const movieData = {
             type: mediaType, // 'movie' or 'tv'
             title: tmdbData.title || tmdbData.name,
@@ -819,7 +797,7 @@ window.addToList = async function(listType, tmdbId, mediaType, itemDataStr) {
             status: listType, // 'watched', 'watching', or 'watchlist'
             rating: 0, // User hasn't rated it yet
             genre: genres,
-            poster: tmdbData.poster_path ? `https://image.tmdb.org/t/p/${posterSize}${tmdbData.poster_path}` : item.poster,
+            poster: tmdbData.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : item.poster,
             backdrop: tmdbData.backdrop_path ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}` : null,
             tmdbId: tmdbId,
             imdbRating: tmdbRating,

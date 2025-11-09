@@ -9,6 +9,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- Logo Animation Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <video id="logo-video" autoplay muted playsinline>
+                <source src="assets/videos/logo-animation.mp4" type="video/mp4">
+                <source src="assets/videos/logo-animation.webm" type="video/webm">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
@@ -196,6 +207,8 @@
         </div>
     </footer>
 
+    <!-- Splash Screen Script (Load first) -->
+    <script src="js/splash-screen.js"></script>
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
 </body>

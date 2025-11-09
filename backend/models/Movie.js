@@ -95,54 +95,6 @@ const MovieSchema = new mongoose.Schema({
         type: Number,
         min: [0, 'Current episode cannot be negative']
     },
-    // Episode Tracking for TV Shows
-    watchedEpisodes: [{
-        seasonNumber: {
-            type: Number,
-            required: true
-        },
-        episodeNumber: {
-            type: Number,
-            required: true
-        },
-        watchedDate: {
-            type: Date,
-            default: Date.now
-        },
-        rating: {
-            type: Number,
-            min: 0,
-            max: 5
-        }
-    }],
-    // Custom Tags/Lists
-    customTags: [{
-        type: String,
-        trim: true,
-        maxlength: [50, 'Tag cannot exceed 50 characters']
-    }],
-    customLists: [{
-        type: String,
-        trim: true,
-        maxlength: [100, 'List name cannot exceed 100 characters']
-    }],
-    // Streaming Availability
-    streamingServices: [{
-        service: {
-            type: String,
-            enum: ['Netflix', 'Amazon Prime', 'Disney+', 'HBO Max', 'Hulu', 'Apple TV+', 'Paramount+', 'Peacock', 'Other']
-        },
-        region: {
-            type: String,
-            default: 'US'
-        },
-        url: String,
-        quality: String, // HD, 4K, etc.
-        lastChecked: {
-            type: Date,
-            default: Date.now
-        }
-    }],
     // Watch Date Tracking
     watchedDate: {
         type: Date
@@ -158,8 +110,5 @@ const MovieSchema = new mongoose.Schema({
 // Index for faster queries
 MovieSchema.index({ user: 1, addedAt: -1 });
 MovieSchema.index({ user: 1, status: 1 });
-MovieSchema.index({ user: 1, customTags: 1 });
-MovieSchema.index({ user: 1, customLists: 1 });
-MovieSchema.index({ user: 1, watchedDate: 1 });
 
 module.exports = mongoose.model('Movie', MovieSchema);

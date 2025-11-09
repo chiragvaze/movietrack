@@ -123,11 +123,6 @@ const API = {
         return await this.request(endpoint, { auth: true });
     },
     
-    async getMovieById(id) {
-        const response = await this.request(`${API_CONFIG.ENDPOINTS.MOVIES}/${id}`, { auth: true });
-        return response.movie || response;
-    },
-    
     async getMovieStats() {
         return await this.request(API_CONFIG.ENDPOINTS.MOVIE_STATS, { auth: true });
     },
@@ -153,70 +148,6 @@ const API = {
             method: 'DELETE',
             auth: true
         });
-    },
-    
-    // Tags & Lists APIs
-    async getTags() {
-        return await this.request('/movies/tags', { auth: true });
-    },
-    
-    async getLists() {
-        return await this.request('/movies/lists', { auth: true });
-    },
-    
-    async addTags(movieId, tags) {
-        return await this.request(`/movies/${movieId}/tags`, {
-            method: 'POST',
-            body: JSON.stringify({ tags }),
-            auth: true
-        });
-    },
-    
-    async removeTags(movieId, tags) {
-        return await this.request(`/movies/${movieId}/tags`, {
-            method: 'DELETE',
-            body: JSON.stringify({ tags }),
-            auth: true
-        });
-    },
-    
-    async addToLists(movieId, lists) {
-        return await this.request(`/movies/${movieId}/lists`, {
-            method: 'POST',
-            body: JSON.stringify({ lists }),
-            auth: true
-        });
-    },
-    
-    // Episode Tracking APIs
-    async markEpisodeWatched(movieId, seasonNumber, episodeNumber, rating = null) {
-        return await this.request(`/movies/${movieId}/episodes`, {
-            method: 'POST',
-            body: JSON.stringify({ seasonNumber, episodeNumber, rating }),
-            auth: true
-        });
-    },
-    
-    async unmarkEpisode(movieId, seasonNumber, episodeNumber) {
-        return await this.request(`/movies/${movieId}/episodes`, {
-            method: 'DELETE',
-            body: JSON.stringify({ seasonNumber, episodeNumber }),
-            auth: true
-        });
-    },
-    
-    // Streaming APIs
-    async addStreamingInfo(movieId, service, region = 'US', url = '', quality = '') {
-        return await this.request(`/movies/${movieId}/streaming`, {
-            method: 'POST',
-            body: JSON.stringify({ service, region, url, quality }),
-            auth: true
-        });
-    },
-    
-    // Calendar API
-    async getCalendar(year, month) {
-        return await this.request(`/movies/calendar/${year}/${month}`, { auth: true });
     },
     
     // Logout
