@@ -1,7 +1,7 @@
 # 🎬 MovieTrack - Complete Project Context
 
-**Last Updated:** November 4, 2025  
-**Current Version:** v2.4.1  
+**Last Updated:** November 9, 2025  
+**Current Version:** v2.5.1  
 **Status:** Production Ready ✅  
 **Repository:** https://github.com/chiragvaze/movietrack
 
@@ -11,12 +11,12 @@
 
 | **Category** | **Details** |
 |-------------|-------------|
-| **Version** | 2.4.1 |
+| **Version** | 2.5.1 |
 | **Frontend** | https://movietrack-three.vercel.app |
 | **Backend** | https://movietrack-backend.onrender.com |
 | **Admin Panel** | https://movietrack-three.vercel.app/admin-login.html |
 | **Theme** | Netflix-inspired (Dark: #141414, Red: #e50914) |
-| **Status** | ✅ Production | ❌ Mobile needs work |
+| **Status** | ✅ Production | ⚠️ Mobile needs work |
 
 ---
 
@@ -34,10 +34,14 @@
 - Complete settings system (10 sections)
 - Export data (JSON/CSV/PDF)
 - Admin panel for user management
+- **Custom Tags System** - Organize movies with personalized tags ⭐ v2.5.0
+- **Tags & Lists Page** - Browse and manage all tagged content ⭐ v2.5.0
+- **Tag Management** - Add/remove tags with quick suggestions ✨ v2.5.1
+- **Tag Display** - Purple gradient badges on movie cards ✨ v2.5.1
 
 ---
 
-## ✅ Current Status (v2.4.1)
+## ✅ Current Status (v2.5.1)
 
 ### What's Working Perfectly
 - ✅ Hybrid API System: OMDb (fast search) + TMDB (trending/recommendations)
@@ -53,6 +57,12 @@
 - ✅ **Complete TMDB Details** - Full movie data fetch with cast, director, plot
 - ✅ **Mobile Responsive Categories** - 2-column grid, optimized touch targets
 - ✅ **Toast Notifications** - Real-time user feedback system
+- ✅ **Custom Tags System** - Add personalized tags to any movie/TV show ⭐ v2.5.0
+- ✅ **Tag Management Modal** - Add/remove tags with quick suggestions ⭐ v2.5.0
+- ✅ **Tag Display on Cards** - Purple gradient badges show up to 2 tags ⭐ v2.5.0
+- ✅ **Tags & Lists Page** - Dedicated page to browse all tags and lists ⭐ v2.5.0
+- ✅ **Working Tag Functionality** - Fixed all tag-related bugs ✨ v2.5.1
+- ✅ **Tag Database Integration** - Tags saved as customTags field ✨ v2.5.1
 - ✅ Export (JSON, CSV, PDF)
 - ✅ Light/Dark/Auto themes
 - ✅ Admin panel
@@ -588,6 +598,269 @@ Content-Type: application/json
 
 **TMDB API Integration:**
 ```javascript
+// Movie endpoint
+https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=credits
+
+// TV Show endpoint
+https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=credits
+```
+
+---
+
+## 🏷️ Tags & Lists Feature (v2.5.0-2.5.1)
+
+### 1. `frontend/js/dashboard-enhanced.js` - Tag Management Functions
+**Purpose:** Allow users to organize movies with custom tags
+
+**Key Functions Added (v2.5.1):**
+
+**addTagToMovie(movieId) - Lines 2975-3064:**
+```javascript
+// Opens modal to add tags to a movie
+function addTagToMovie(movieId) {
+    const movie = movies.find(m => m._id === movieId);
+    const existingTags = movie.customTags || [];
+    
+    // Display current tags with remove button
+    // Show input field for new tags
+    // Display quick tag suggestions (Favorites, Watch Later, Must Rewatch, etc.)
+    // Press Enter or click Add Tag button to submit
+}
+```
+
+**submitNewTag(movieId) - Lines 3066-3125:**
+```javascript
+// Submit a new tag for a movie
+async function submitNewTag(movieId) {
+    const tagName = input.value.trim();
+    
+    // Check if tag already exists
+    if (movie.customTags && movie.customTags.includes(tagName)) {
+        showToast('Tag already exists on this movie', 'error');
+        return;
+    }
+    
+    // Add tag to movie
+    const updatedTags = [...(movie.customTags || []), tagName];
+    
+    // Update via API using customTags field
+    const response = await API.updateMovie(movieId, { customTags: updatedTags });
+    
+    // Refresh display
+    renderMovies();
+}
+```
+
+**addQuickTag(movieId, tagName) - Lines 3127-3158:**
+```javascript
+// Add a quick tag (from suggestions)
+async function addQuickTag(movieId, tagName) {
+    const updatedTags = [...(movie.customTags || []), tagName];
+    const response = await API.updateMovie(movieId, { customTags: updatedTags });
+    // Close modal and refresh
+}
+```
+
+**removeTagFromMovie(movieId, tagName, buttonElement) - Lines 3160-3204:**
+```javascript
+// Remove a tag from a movie
+async function removeTagFromMovie(movieId, tagName, buttonElement) {
+    const updatedTags = (movie.customTags || []).filter(t => t !== tagName);
+    const response = await API.updateMovie(movieId, { customTags: updatedTags });
+    
+    // Remove tag badge from UI
+    buttonElement.closest('.tag-badge').remove();
+    
+    // If no tags left, remove the current tags section
+    if (updatedTags.length === 0) {
+        currentTagsSection.nextElementSibling.remove(); // Remove hr
+        currentTagsSection.remove();
+    }
+    
+    renderMovies();
+}
+```
+
+**Tag Display in renderMovies() - Lines 858-863:**
+```javascript
+// Display tags on movie cards
+${movie.customTags && movie.customTags.length > 0 ? `
+    <div class="movie-tags-container">
+        ${movie.customTags.slice(0, 2).map(tag => `<span class="tag-badge-display">${tag}</span>`).join('')}
+        ${movie.customTags.length > 2 ? `<span class="tag-more">+${movie.customTags.length - 2}</span>` : ''}
+    </div>
+` : ''}
+```
+
+**Tag Button in Movie Card - Line 869:**
+```javascript
+<button class="btn-icon" onclick="addTagToMovie('${movie._id}')" title="Add Tag">
+    <i class="fas fa-tag"></i>
+</button>
+```
+
+### 2. `frontend/css/styles.css` - Tag Styling
+**Tag Management Styles - Lines 7105-7245:**
+
+```css
+/* Tag input group */
+.tag-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Tag badges in modal */
+.tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Tag badges on movie cards */
+.tag-badge-display {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 0.3rem;
+    margin-bottom: 0.3rem;
+}
+
+/* Remove tag button */
+.remove-tag-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.remove-tag-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Quick tag buttons */
+.quick-tag-btn {
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.quick-tag-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    transform: translateY(-2px);
+}
+
+/* Tag more indicator */
+.tag-more {
+    display: inline-block;
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+```
+
+### 3. `frontend/js/tags-lists.js` (384 lines)
+**Purpose:** Dedicated page for browsing and managing tags and lists
+
+**Key Functions:**
+- `loadMovies()` - Fetch all user movies
+- `loadTags()` - Fetch all unique tags from backend
+- `displayTags()` - Show tag cloud with movie counts
+- `loadLists()` - Fetch custom lists
+- `displayLists()` - Show list cards
+
+### 4. `backend/routes/movies.js` - Tag API Endpoints
+
+**GET /api/movies/tags - Lines 137-165:**
+```javascript
+// Get all custom tags used by user
+router.get('/tags', async (req, res) => {
+    const movies = await Movie.find({ user: req.user.id });
+    
+    const allTags = new Set();
+    movies.forEach(movie => {
+        if (movie.customTags) {
+            movie.customTags.forEach(tag => allTags.add(tag));
+        }
+    });
+    
+    res.json({
+        success: true,
+        tags: Array.from(allTags).sort()
+    });
+});
+```
+
+### 5. `backend/models/Movie.js` - Tag Schema
+
+**customTags Field - Lines 117-121:**
+```javascript
+customTags: [{
+    type: String,
+    trim: true,
+    maxlength: [50, 'Tag cannot exceed 50 characters']
+}],
+```
+
+**Database Index - Line 159:**
+```javascript
+MovieSchema.index({ user: 1, customTags: 1 });
+```
+
+### 6. Tag Feature Flow
+
+**User Journey:**
+1. User clicks tag icon (🏷️) on any movie card
+2. Modal opens showing:
+   - Current tags (with × remove button)
+   - Input field for new tags
+   - Quick tag suggestions (Favorites, Watch Later, Must Rewatch, etc.)
+3. User types tag name and presses Enter or clicks "Add Tag"
+4. Tag saved to database via `API.updateMovie(movieId, { customTags })`
+5. Modal closes, movie card refreshes
+6. Tags displayed as purple gradient badges on card (max 2 visible)
+7. Navigate to Tags & Lists page to browse all tags
+
+**Technical Details:**
+- Field name: `customTags` (array of strings)
+- Max length: 50 characters per tag
+- Display limit: 2 tags per card ("+X" for more)
+- Color scheme: Purple gradient (#667eea → #764ba2)
+- Quick suggestions: 6 predefined tags
+- Remove functionality: Click × on tag badge
+
+---
+
+**TMDB API Integration:**
+```javascript
 // Endpoint format
 https://api.themoviedb.org/3/{movie|tv}/{tmdb_id}?api_key=${KEY}&append_to_response=credits
 
@@ -908,9 +1181,43 @@ localStorage.setItem('debug', 'true');
 
 ---
 
-## �📝 Version History
+## 📝 Version History
 
-### v2.4.1 (November 2025) ⭐ CURRENT
+### v2.5.1 (November 2025) ⭐ CURRENT
+**Tag System Bug Fixes:**
+- ✅ Fixed `displayMovies is not defined` error (changed to `renderMovies`)
+- ✅ Fixed tag database integration (changed `tags` to `customTags`)
+- ✅ Fixed tag display on movie cards
+- ✅ Added tag badges with purple gradient styling
+- ✅ Implemented tag removal functionality
+- ✅ Added quick tag suggestions in modal
+- ✅ Complete tag workflow now functional
+
+**Files Modified:**
+- `frontend/js/dashboard-enhanced.js` - Fixed all function references
+- `frontend/css/styles.css` - Added tag styling (140+ lines)
+- `PROJECT_CONTEXT.md` - Updated to v2.5.1
+
+### v2.5.0 (November 2025)
+**Custom Tags & Lists Feature:**
+- ✅ Tag management modal with add/remove functionality
+- ✅ Tag display on movie cards (purple gradient badges)
+- ✅ Tags & Lists page for browsing tagged content
+- ✅ Quick tag suggestions (Favorites, Watch Later, Must Rewatch, etc.)
+- ✅ Backend API endpoints for tags
+- ✅ Database schema with customTags field
+
+**Files Created:**
+- `frontend/tags-lists.html` - Tags & Lists page
+- `frontend/js/tags-lists.js` - Tag browsing logic (384 lines)
+
+**Files Modified:**
+- `frontend/js/dashboard-enhanced.js` - Added tag functions (230+ lines)
+- `frontend/css/styles.css` - Added tag styles (140+ lines)
+- `backend/routes/movies.js` - Added tag endpoints
+- `backend/models/Movie.js` - Added customTags field
+
+### v2.4.1 (November 2025)
 **Key Features:**
 - ✅ Action buttons on category movie cards (Watched/Watching/Watchlist)
 - ✅ Load More pagination with smooth scrolling
