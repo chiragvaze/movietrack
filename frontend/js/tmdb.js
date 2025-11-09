@@ -109,8 +109,8 @@ const TMDB = {
         // Get user settings for language, region, and adult content
         const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
         const language = settings.defaultLanguage || 'en';
-        const region = settings.defaultRegion || 'US';
-        const includeAdult = settings.adultContent || false;
+        const region = settings.defaultRegion || 'IN'; // Default to India
+        const includeAdult = settings.includeAdultContent || false;
         
         const cacheKey = `movie_${query.toLowerCase()}_${language}_${region}_${includeAdult}`;
         
@@ -180,8 +180,8 @@ const TMDB = {
         // Get user settings for language, region, and adult content
         const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
         const language = settings.defaultLanguage || 'en';
-        const region = settings.defaultRegion || 'US';
-        const includeAdult = settings.adultContent || false;
+        const region = settings.defaultRegion || 'IN'; // Default to India
+        const includeAdult = settings.includeAdultContent || false;
         
         const cacheKey = `tv_${query.toLowerCase()}_${language}_${region}_${includeAdult}`;
         
@@ -497,6 +497,63 @@ const TMDB = {
             console.error('TMDB discover by genre error:', error);
             return [];
         }
+    },
+
+    // Get streaming providers for a movie/TV show
+    async getStreamingProviders(tmdbId, type = 'movie') {
+        try {
+            const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+            const region = settings.defaultRegion || 'IN'; // Default to India
+            
+            const endpoint = type === 'movie' ? 'movie' : 'tv';
+            const response = await fetchWithTimeout(
+                `${TMDB_CONFIG.BASE_URL}/${endpoint}/${tmdbId}/watch/providers?api_key=${TMDB_CONFIG.API_KEY}`
+            );
+            
+            if (!response.ok) {
+                console.warn('No streaming providers found');
+                return [];
+            }
+            
+            const data = await response.json();
+            const providers = data.results && data.results[region];
+            
+            if (!providers) {
+                console.log(`No streaming providers available in ${region}`);
+                return [];
+            }
+            
+            const streamingServices = [];
+            
+            // Flatten all provider types (flatrate, rent, buy)
+            const allProviders = [
+                ...(providers.flatrate || []),
+                ...(providers.rent || []),
+                ...(providers.buy || [])
+            ];
+            
+            // Remove duplicates by provider_id
+            const uniqueProviders = Array.from(
+                new Map(allProviders.map(p => [p.provider_id, p])).values()
+            );
+            
+            uniqueProviders.forEach(provider => {
+                streamingServices.push({
+                    service: provider.provider_name,
+                    link: providers.link || '',
+                    logoPath: provider.logo_path 
+                        ? `${TMDB_CONFIG.IMAGE_BASE_URL}/original${provider.logo_path}`
+                        : null
+                });
+            });
+            
+            console.log(`Found ${streamingServices.length} streaming services for ${type} ${tmdbId} in ${region}`);
+            return streamingServices;
+        } catch (error) {
+            console.error('Error fetching streaming providers:', error);
+            return [];
+        }
     }
 };
+
 

@@ -42,26 +42,54 @@ function showNotification(message, type = 'info') {
 // Service icons mapping
 const serviceIcons = {
     'Netflix': 'fab fa-netflix',
+    'Amazon Prime Video': 'fab fa-amazon',
     'Amazon Prime': 'fab fa-amazon',
+    'Prime Video': 'fab fa-amazon',
+    'Disney+ Hotstar': 'fas fa-film',
+    'Disney Plus Hotstar': 'fas fa-film',
     'Disney+': 'fas fa-film',
     'HBO Max': 'fas fa-play',
     'Hulu': 'fas fa-tv',
     'Apple TV+': 'fab fa-apple',
+    'Apple TV Plus': 'fab fa-apple',
     'Paramount+': 'fas fa-mountain',
+    'Paramount Plus': 'fas fa-mountain',
     'Peacock': 'fas fa-feather',
+    'JioCinema': 'fas fa-video',
+    'SonyLIV': 'fas fa-play-circle',
+    'ZEE5': 'fas fa-film',
+    'Voot': 'fas fa-tv',
+    'MX Player': 'fas fa-play',
+    'Eros Now': 'fas fa-film',
+    'hoichoi': 'fas fa-video',
+    'ALTBalaji': 'fas fa-play-circle',
     'Other': 'fas fa-play-circle'
 };
 
 // Service colors
 const serviceColors = {
     'Netflix': '#E50914',
+    'Amazon Prime Video': '#00A8E1',
     'Amazon Prime': '#00A8E1',
+    'Prime Video': '#00A8E1',
+    'Disney+ Hotstar': '#0063e5',
+    'Disney Plus Hotstar': '#0063e5',
     'Disney+': '#113CCF',
     'HBO Max': '#9333EA',
     'Hulu': '#1CE783',
     'Apple TV+': '#000000',
+    'Apple TV Plus': '#000000',
     'Paramount+': '#0064FF',
+    'Paramount Plus': '#0064FF',
     'Peacock': '#000000',
+    'JioCinema': '#8B00FF',
+    'SonyLIV': '#FF6F00',
+    'ZEE5': '#6E3CBC',
+    'Voot': '#EE0000',
+    'MX Player': '#0E7DDA',
+    'Eros Now': '#DC143C',
+    'hoichoi': '#FF6B00',
+    'ALTBalaji': '#FF6F00',
     'Other': '#6B7280'
 };
 

@@ -877,6 +877,9 @@ function renderMovies() {
                     <button class="btn-icon" onclick="addTagToMovie('${movie._id}')" title="Add Tag">
                         <i class="fas fa-tag"></i>
                     </button>
+                    <button class="btn-icon" onclick="addMovieToList('${movie._id}')" title="Add to List">
+                        <i class="fas fa-list"></i>
+                    </button>
                     ${movie.type === 'tv' ? `
                         <button class="btn-icon" onclick="initEpisodeTracker('${movie._id}')" title="Track Episodes">
                             <i class="fas fa-list-check"></i>
@@ -2097,11 +2100,51 @@ function initSidebar() {
             showNotification('Loading upcoming releases...', 'info');
             
             try {
-                const response = await fetch(`https://api.themoviedb.org/3/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
-                const data = await response.json();
+                // Get current date and upcoming dates
+                const today = new Date();
+                const maxDate = new Date();
+                maxDate.setMonth(maxDate.getMonth() + 6); // Next 6 months
                 
-                // Show upcoming movies in a modal
-                showUpcomingModal(data.results);
+                const minDateStr = today.toISOString().split('T')[0];
+                const maxDateStr = maxDate.toISOString().split('T')[0];
+                
+                // Get user settings for region
+                const settings = window.userSettings || JSON.parse(localStorage.getItem('movietrack_settings') || '{}');
+                const region = settings.defaultRegion || 'IN';
+                
+                // Fetch upcoming movies and TV shows
+                const [moviesResponse, tvResponse] = await Promise.all([
+                    fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=en-US&region=${region}&primary_release_date.gte=${minDateStr}&primary_release_date.lte=${maxDateStr}&sort_by=popularity.desc&page=1`),
+                    fetch(`https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=en-US&first_air_date.gte=${minDateStr}&first_air_date.lte=${maxDateStr}&sort_by=popularity.desc&page=1`)
+                ]);
+                
+                const moviesData = await moviesResponse.json();
+                const tvData = await tvResponse.json();
+                
+                // Combine and sort by release date
+                const combined = [
+                    ...moviesData.results.map(m => ({
+                        ...m, 
+                        mediaType: 'movie',
+                        releaseDate: m.release_date,
+                        displayTitle: m.title
+                    })),
+                    ...tvData.results.map(t => ({
+                        ...t,
+                        mediaType: 'tv',
+                        releaseDate: t.first_air_date,
+                        displayTitle: t.name
+                    }))
+                ].filter(item => {
+                    // Filter out items with past release dates
+                    if (!item.releaseDate) return false;
+                    return new Date(item.releaseDate) >= today;
+                }).sort((a, b) => {
+                    return new Date(a.releaseDate) - new Date(b.releaseDate);
+                });
+                
+                // Show upcoming content in a modal
+                showUpcomingModal(combined.slice(0, 20)); // Show top 20
             } catch (error) {
                 console.error('Error loading upcoming:', error);
                 showNotification('Failed to load upcoming releases', 'error');
@@ -2136,8 +2179,8 @@ function initSidebar() {
     });
 }
 
-// Show upcoming movies modal
-function showUpcomingModal(movies) {
+// Show upcoming movies and TV shows modal
+function showUpcomingModal(items) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'block';
@@ -2149,23 +2192,28 @@ function showUpcomingModal(movies) {
     if (quality === 'low') posterSize = 'w185';
     else if (quality === 'high') posterSize = 'w780';
     
-    const upcomingHTML = movies.slice(0, 10).map(movie => `
-        <div class="upcoming-item" onclick="openRecommendationDetails(${movie.id}, 'movie')">
-            <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/' + posterSize + movie.poster_path : ''}" 
-                 alt="${movie.title}"
+    const upcomingHTML = items.map(item => {
+        const mediaTypeIcon = item.mediaType === 'tv' ? '<i class="fas fa-tv"></i>' : '<i class="fas fa-film"></i>';
+        const mediaTypeLabel = item.mediaType === 'tv' ? 'TV Show' : 'Movie';
+        
+        return `
+        <div class="upcoming-item" onclick="openRecommendationDetails(${item.id}, '${item.mediaType}')">
+            <img src="${item.poster_path ? 'https://image.tmdb.org/t/p/' + posterSize + item.poster_path : ''}" 
+                 alt="${item.displayTitle}"
                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22300%22><rect fill=%22%232a2a2a%22 width=%22200%22 height=%22300%22/><text fill=%22%23666%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'">
             <div class="upcoming-info">
-                <h4>${movie.title}</h4>
-                <p>Release: ${new Date(movie.release_date).toLocaleDateString()}</p>
-                <p class="rating">⭐ ${movie.vote_average.toFixed(1)}</p>
+                <span class="media-type-badge">${mediaTypeIcon} ${mediaTypeLabel}</span>
+                <h4>${item.displayTitle}</h4>
+                <p>Release: ${new Date(item.releaseDate).toLocaleDateString()}</p>
+                <p class="rating">⭐ ${item.vote_average ? item.vote_average.toFixed(1) : 'N/A'}</p>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     
     modal.innerHTML = `
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
-                <h2><i class="fas fa-clock"></i> Upcoming Movies</h2>
+                <h2><i class="fas fa-clock"></i> Upcoming Movies & TV Shows</h2>
                 <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
             </div>
             <div class="upcoming-grid">
@@ -3207,3 +3255,248 @@ async function removeTagFromMovie(movieId, tagName, buttonElement) {
         showToast('Error removing tag', 'error');
     }
 }
+
+/**
+ * Opens modal to add movie to list(s)
+ */
+async function addMovieToList(movieId) {
+    const movie = movies.find(m => m._id === movieId);
+    if (!movie) {
+        showToast('Movie not found', 'error');
+        return;
+    }
+    
+    // Fetch available lists
+    try {
+        const response = await API.getLists();
+        
+        const lists = response.success && response.lists ? response.lists : [];
+        const movieLists = movie.lists || [];
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 550px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-list"></i> Add "${movie.title}" to List</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    ${lists.length > 0 ? `
+                        <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                            Select existing lists or create a new one:
+                        </p>
+                        
+                        <div class="lists-selection" style="max-height: 250px; overflow-y: auto; margin-bottom: 1rem;">
+                            ${lists.map(list => {
+                                const isInList = movieLists.includes(list.name);
+                                return `
+                                    <label class="list-checkbox-item" style="
+                                        display: flex;
+                                        align-items: center;
+                                        padding: 0.75rem;
+                                        margin-bottom: 0.5rem;
+                                        background: var(--card-bg);
+                                        border: 2px solid ${isInList ? 'var(--primary-color)' : 'var(--border-color)'};
+                                        border-radius: 8px;
+                                        cursor: pointer;
+                                        transition: all 0.3s ease;
+                                    ">
+                                        <input type="checkbox" 
+                                               name="list" 
+                                               value="${list.name}"
+                                               ${isInList ? 'checked disabled' : ''}
+                                               style="margin-right: 0.75rem; width: 18px; height: 18px; cursor: pointer;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: 600; color: var(--text-primary);">
+                                                ${list.name}
+                                            </div>
+                                            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                                ${list.movies?.length || 0} ${list.movies?.length === 1 ? 'item' : 'items'}
+                                                ${isInList ? '<span style="color: var(--primary-color); margin-left: 0.5rem;"><i class="fas fa-check"></i> Already added</span>' : ''}
+                                            </div>
+                                        </div>
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                        <hr style="margin: 1.5rem 0; border-color: var(--border-color);">
+                    ` : `
+                        <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                            <i class="fas fa-info-circle"></i> You don't have any lists yet. Create your first one below!
+                        </p>
+                    `}
+                    
+                    <div class="create-new-list-section">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--text-primary);">
+                            <i class="fas fa-plus-circle"></i> Create New List
+                        </h4>
+                        <div class="tag-input-group" style="display: flex; gap: 0.5rem;">
+                            <input type="text" 
+                                   id="newListNameInput" 
+                                   placeholder="Enter list name (e.g., 'Date Night', 'Action Favorites')" 
+                                   class="form-input"
+                                   style="flex: 1;">
+                            <button id="createNewListBtn" data-movie-id="${movieId}" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Create & Add
+                            </button>
+                        </div>
+                        <p class="hint-text" style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                            <i class="fas fa-lightbulb"></i> Press Enter to quickly create and add
+                        </p>
+                    </div>
+                                            <p class="hint-text" style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">
+                            <i class="fas fa-lightbulb"></i> Press Enter to quickly create and add
+                        </p>
+                    </div>
+                    
+                    ${lists.length > 0 ? `
+                        <div style="margin-top: 1.5rem; text-align: right; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                            <button onclick="this.closest('.modal').remove()" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                                Cancel
+                            </button>
+                            <button onclick="submitAddToLists('${movieId}')" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Add to Selected Lists
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Handle Enter key for quick creation and button click
+        const newListInput = modal.querySelector('#newListNameInput');
+        const createBtn = modal.querySelector('#createNewListBtn');
+        
+        if (newListInput && createBtn) {
+            // Function to handle list creation
+            const handleCreateList = async () => {
+                const listName = newListInput.value.trim();
+                
+                if (!listName) {
+                    showToast('Please enter a list name', 'error');
+                    newListInput.focus();
+                    return;
+                }
+                
+                // Validate list name
+                if (listName.length < 2) {
+                    showToast('List name must be at least 2 characters', 'error');
+                    newListInput.focus();
+                    return;
+                }
+                
+                if (listName.length > 50) {
+                    showToast('List name must be less than 50 characters', 'error');
+                    newListInput.focus();
+                    return;
+                }
+                
+                try {
+                    // Add movie to the new list (backend will create list automatically)
+                    const response = await API.addToLists(movieId, [listName]);
+                    
+                    if (response.success) {
+                        // Update local movie data
+                        const movie = movies.find(m => m._id === movieId);
+                        if (movie) {
+                            movie.lists = [...(movie.lists || []), listName];
+                        }
+                        
+                        showToast(`List "${listName}" created and movie added!`, 'success');
+                        modal.remove();
+                        renderMovies();
+                    } else {
+                        showToast('Failed to create list and add movie', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error creating list:', error);
+                    showToast('Failed to create list', 'error');
+                }
+            };
+            
+            // Button click handler
+            createBtn.addEventListener('click', handleCreateList);
+            
+            // Enter key handler
+            newListInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCreateList();
+                }
+            });
+            
+            newListInput.focus();
+        }
+        
+        // Close modal handlers
+        const closeBtn = modal.querySelector('.close');
+        closeBtn.onclick = () => modal.remove();
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
+        
+        // Hover effect for list items
+        const listItems = modal.querySelectorAll('.list-checkbox-item');
+        listItems.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                if (!item.querySelector('input').disabled) {
+                    item.style.borderColor = 'var(--primary-color)';
+                    item.style.background = 'var(--card-hover)';
+                }
+            });
+            item.addEventListener('mouseleave', () => {
+                if (!item.querySelector('input').checked) {
+                    item.style.borderColor = 'var(--border-color)';
+                    item.style.background = 'var(--card-bg)';
+                }
+            });
+        });
+        
+    } catch (error) {
+        console.error('Error fetching lists:', error);
+        showToast('Failed to load lists', 'error');
+    }
+}
+
+/**
+ * Submit selected lists to add movie to
+ */
+async function submitAddToLists(movieId) {
+    const modal = document.querySelector('.modal');
+    const checkboxes = modal.querySelectorAll('input[name="list"]:checked:not([disabled])');
+    
+    if (checkboxes.length === 0) {
+        showToast('Please select at least one list', 'error');
+        return;
+    }
+    
+    const selectedLists = Array.from(checkboxes).map(cb => cb.value);
+    
+    try {
+        const response = await API.addToLists(movieId, selectedLists);
+        
+        if (response.success) {
+            // Update local movie data
+            const movie = movies.find(m => m._id === movieId);
+            if (movie) {
+                movie.lists = [...(movie.lists || []), ...selectedLists];
+            }
+            
+            showToast(`Added to ${selectedLists.length} list${selectedLists.length > 1 ? 's' : ''}!`, 'success');
+            modal.remove();
+            renderMovies();
+        } else {
+            showToast('Failed to add to lists', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding to lists:', error);
+        showToast('Error adding to lists', 'error');
+    }
+}
+

@@ -34,6 +34,65 @@
         </div>
     </nav>
 
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-film"></i> Menu</h3>
+            <button class="close-sidebar" id="closeSidebarBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li class="menu-section-title">Browse</li>
+                <li>
+                    <a href="dashboard.html">
+                        <i class="fas fa-th-large"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="categories.html">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Categories</span>
+                    </a>
+                </li>
+                
+                <li class="menu-divider"></li>
+                
+                <li class="menu-section-title">Features</li>
+                <li>
+                    <a href="tags-lists.html">
+                        <i class="fas fa-tags"></i>
+                        <span>Tags & Lists</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="calendar.html">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Watch Calendar</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="streaming.html">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Streaming</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="settings.html" class="active">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
     <!-- Main Content -->
     <main class="settings-page">
         <div class="container">
@@ -836,5 +895,36 @@
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/settings.js"></script>
+    <script>
+        // Sidebar functionality
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+        function openSidebar() {
+            sidebar.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', openSidebar);
+        }
+
+        if (closeSidebarBtn) {
+            closeSidebarBtn.addEventListener('click', closeSidebar);
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+    </script>
 </body>
 </html>
