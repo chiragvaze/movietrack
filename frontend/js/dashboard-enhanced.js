@@ -3646,6 +3646,7 @@ let currentNotificationFilter = 'all';
  */
 async function initNotificationCenter() {
     const bellBtn = document.getElementById('notificationBellBtn');
+    const profileBtn = document.getElementById('profileBtn');
     const dropdown = document.getElementById('notificationDropdown');
     const closeBtn = document.getElementById('closeNotificationBtn');
     const filterBtns = document.querySelectorAll('.filter-btn');
@@ -3659,7 +3660,7 @@ async function initNotificationCenter() {
     await updateUnreadCount();
     await loadMutePreferences();
     
-    // Toggle dropdown
+    // Toggle dropdown from bell button (desktop)
     bellBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -3671,6 +3672,36 @@ async function initNotificationCenter() {
         }
     });
     
+    // Toggle dropdown from profile icon (mobile)
+    if (profileBtn && window.innerWidth <= 480) {
+        profileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                loadNotifications();
+            }
+        });
+    }
+    
+    // Update on window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth <= 480 && profileBtn) {
+            profileBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isVisible = dropdown.style.display === 'block';
+                dropdown.style.display = isVisible ? 'none' : 'block';
+                
+                if (!isVisible) {
+                    loadNotifications();
+                }
+            };
+        }
+    });
+    
     // Close dropdown
     closeBtn?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -3679,7 +3710,8 @@ async function initNotificationCenter() {
     
     // Close on outside click
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.notification-bell-container')) {
+        if (!e.target.closest('.notification-bell-container') && 
+            !e.target.closest('.profile-container')) {
             dropdown.style.display = 'none';
         }
     });
@@ -3883,10 +3915,19 @@ async function updateUnreadCount() {
         const data = await response.json();
         
         const badge = document.getElementById('notificationBadge');
+        const profileBadge = document.getElementById('profileNotificationBadge');
+        
         if (badge && data.success) {
             const count = data.count || 0;
             badge.textContent = count;
             badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+        
+        // Sync with profile badge for mobile
+        if (profileBadge && data.success) {
+            const count = data.count || 0;
+            profileBadge.textContent = count;
+            profileBadge.style.display = count > 0 ? 'flex' : 'none';
         }
     } catch (error) {
         console.error('Error updating unread count:', error);

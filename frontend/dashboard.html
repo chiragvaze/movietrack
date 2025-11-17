@@ -31,7 +31,7 @@
                 <li><a href="#" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-moon"></i></a></li>
                 
                 <!-- Notification Bell -->
-                <li class="notification-bell-container">
+                <li class="notification-bell-container desktop-notification">
                     <a href="#" id="notificationBellBtn" class="notification-bell-btn" title="Notifications">
                         <i class="fas fa-bell"></i>
                         <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
@@ -93,7 +93,12 @@
                     </div>
                 </li>
                 
-                <li><a href="#" id="profileBtn" class="profile-icon"><i class="fas fa-user-circle"></i></a></li>
+                <li class="profile-container">
+                    <a href="#" id="profileBtn" class="profile-icon">
+                        <i class="fas fa-user-circle"></i>
+                        <span class="profile-notification-badge" id="profileNotificationBadge" style="display: none;">0</span>
+                    </a>
+                </li>
                 <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>

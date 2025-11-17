@@ -2678,18 +2678,46 @@ footer {
         display: none;
     }
     
-    /* Show only profile icon on mobile */
-    .nav-menu li:has(.profile-icon) {
+    /* Hide desktop notification bell on mobile */
+    .nav-menu li.desktop-notification {
+        display: none !important;
+    }
+    
+    /* Show only profile container on mobile */
+    .nav-menu li.profile-container {
         display: block;
+        position: relative;
     }
     
     .profile-icon {
         font-size: 1.6rem !important;
         padding: 0.3rem 0.5rem !important;
+        position: relative;
     }
     
     .profile-icon i {
         font-size: 1.6rem;
+    }
+    
+    /* Profile notification badge for mobile */
+    .profile-notification-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: linear-gradient(135deg, #e50914 0%, #b20710 100%);
+        color: white;
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 0.1rem 0.35rem;
+        border-radius: 10px;
+        min-width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(229, 9, 20, 0.4);
+        animation: pulse 2s infinite;
+        z-index: 10;
     }
     
     /* Dashboard Mobile Styles */
