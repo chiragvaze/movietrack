@@ -43,6 +43,17 @@ const UserSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    notificationPreferences: {
+        muteUntil: {
+            type: Date,
+            default: null
+        },
+        mutedTypes: {
+            type: [String],
+            enum: ['info', 'success', 'warning', 'error'],
+            default: []
+        }
     }
 });
 

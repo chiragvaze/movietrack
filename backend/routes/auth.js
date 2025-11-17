@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const ActivityLog = require('../models/ActivityLog');
+const Announcement = require('../models/Announcement');
 const { protect } = require('../middleware/auth');
 
 // Generate JWT Token
@@ -435,6 +436,189 @@ router.delete('/delete-account', protect, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error while deleting account'
+        });
+    }
+});
+
+// @route   GET /api/auth/announcements
+// @desc    Get active announcements for users
+// @access  Public
+router.get('/announcements', async (req, res) => {
+    try {
+        const announcements = await Announcement.find({ active: true })
+            .select('title message type createdAt viewedBy')
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        res.json({
+            success: true,
+            data: announcements
+        });
+    } catch (error) {
+        console.error('Get announcements error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching announcements'
+        });
+    }
+});
+
+// @route   GET /api/auth/announcements/unread
+// @desc    Get unread announcement count for user
+// @access  Private
+router.get('/announcements/unread', protect, async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        // Get user preferences
+        const user = await User.findById(userId);
+        const mutedTypes = user.notificationPreferences?.mutedTypes || [];
+        const muteUntil = user.notificationPreferences?.muteUntil;
+        
+        // Check if notifications are muted
+        const isMuted = muteUntil && new Date(muteUntil) > new Date();
+        
+        if (isMuted) {
+            return res.json({
+                success: true,
+                count: 0,
+                muted: true
+            });
+        }
+        
+        // Count announcements not viewed by user and not in muted types
+        const unreadCount = await Announcement.countDocuments({
+            active: true,
+            type: { $nin: mutedTypes },
+            'viewedBy.user': { $ne: userId }
+        });
+
+        res.json({
+            success: true,
+            count: unreadCount,
+            muted: false
+        });
+    } catch (error) {
+        console.error('Get unread count error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching unread count'
+        });
+    }
+});
+
+// @route   POST /api/auth/announcements/:id/mark-read
+// @desc    Mark announcement as read
+// @access  Private
+router.post('/announcements/:id/mark-read', protect, async (req, res) => {
+    try {
+        const announcement = await Announcement.findById(req.params.id);
+        
+        if (!announcement) {
+            return res.status(404).json({
+                success: false,
+                message: 'Announcement not found'
+            });
+        }
+        
+        // Check if already viewed by user
+        const alreadyViewed = announcement.viewedBy.some(
+            v => v.user.toString() === req.user._id.toString()
+        );
+        
+        if (!alreadyViewed) {
+            announcement.viewedBy.push({
+                user: req.user._id,
+                viewedAt: new Date()
+            });
+            await announcement.save();
+        }
+
+        res.json({
+            success: true,
+            message: 'Announcement marked as read'
+        });
+    } catch (error) {
+        console.error('Mark read error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error marking announcement as read'
+        });
+    }
+});
+
+// @route   PUT /api/auth/notification-preferences
+// @desc    Update notification preferences (mute)
+// @access  Private
+router.put('/notification-preferences', protect, async (req, res) => {
+    try {
+        const { muteUntil, mutedTypes } = req.body;
+        
+        const user = await User.findById(req.user._id);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        
+        // Initialize preferences if not exists
+        if (!user.notificationPreferences) {
+            user.notificationPreferences = {};
+        }
+        
+        if (muteUntil !== undefined) {
+            user.notificationPreferences.muteUntil = muteUntil;
+        }
+        
+        if (mutedTypes !== undefined) {
+            user.notificationPreferences.mutedTypes = mutedTypes;
+        }
+        
+        await user.save();
+        
+        // Log activity
+        await ActivityLog.create({
+            user: req.user._id,
+            action: 'update_notification_preferences',
+            details: `Updated notification preferences`,
+            ipAddress: req.ip
+        });
+
+        res.json({
+            success: true,
+            message: 'Notification preferences updated',
+            preferences: user.notificationPreferences
+        });
+    } catch (error) {
+        console.error('Update preferences error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating preferences'
+        });
+    }
+});
+
+// @route   GET /api/auth/notification-preferences
+// @desc    Get notification preferences
+// @access  Private
+router.get('/notification-preferences', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        
+        res.json({
+            success: true,
+            preferences: user.notificationPreferences || {
+                muteUntil: null,
+                mutedTypes: []
+            }
+        });
+    } catch (error) {
+        console.error('Get preferences error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching preferences'
         });
     }
 });

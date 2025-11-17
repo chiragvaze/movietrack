@@ -4,6 +4,7 @@ const { protect, adminOnly } = require('../middleware/auth');
 const User = require('../models/User');
 const Movie = require('../models/Movie');
 const ActivityLog = require('../models/ActivityLog');
+const Announcement = require('../models/Announcement');
 
 // Helper function to log activity
 const logActivity = async (userId, userName, action, details = '', ipAddress = '') => {
@@ -512,6 +513,356 @@ router.get('/stats', protect, adminOnly, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching statistics',
+            error: error.message
+        });
+    }
+});
+
+// @route   POST /api/admin/users/bulk-ban
+// @desc    Ban multiple users
+// @access  Private/Admin
+router.post('/users/bulk-ban', protect, adminOnly, async (req, res) => {
+    try {
+        const { userIds } = req.body;
+
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide user IDs to ban'
+            });
+        }
+
+        // Update all users
+        const result = await User.updateMany(
+            { _id: { $in: userIds }, role: { $ne: 'admin' } },
+            { $set: { status: 'banned' } }
+        );
+
+        // Log activity
+        for (const userId of userIds) {
+            const user = await User.findById(userId);
+            if (user && user.role !== 'admin') {
+                await logActivity(userId, user.name, 'banned', `Banned by admin ${req.user.name}`, req.ip);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `${result.modifiedCount} user(s) banned successfully`,
+            data: { count: result.modifiedCount }
+        });
+    } catch (error) {
+        console.error('Bulk ban error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error banning users',
+            error: error.message
+        });
+    }
+});
+
+// @route   POST /api/admin/users/bulk-unban
+// @desc    Unban multiple users
+// @access  Private/Admin
+router.post('/users/bulk-unban', protect, adminOnly, async (req, res) => {
+    try {
+        const { userIds } = req.body;
+
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide user IDs to unban'
+            });
+        }
+
+        // Update all users
+        const result = await User.updateMany(
+            { _id: { $in: userIds } },
+            { $set: { status: 'active' } }
+        );
+
+        // Log activity
+        for (const userId of userIds) {
+            const user = await User.findById(userId);
+            if (user) {
+                await logActivity(userId, user.name, 'unbanned', `Unbanned by admin ${req.user.name}`, req.ip);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `${result.modifiedCount} user(s) unbanned successfully`,
+            data: { count: result.modifiedCount }
+        });
+    } catch (error) {
+        console.error('Bulk unban error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error unbanning users',
+            error: error.message
+        });
+    }
+});
+
+// @route   POST /api/admin/users/bulk-delete
+// @desc    Delete multiple users and their movies
+// @access  Private/Admin
+router.post('/users/bulk-delete', protect, adminOnly, async (req, res) => {
+    try {
+        const { userIds } = req.body;
+
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide user IDs to delete'
+            });
+        }
+
+        // Delete users' movies
+        await Movie.deleteMany({ user: { $in: userIds } });
+
+        // Delete users (excluding admins)
+        const result = await User.deleteMany({
+            _id: { $in: userIds },
+            role: { $ne: 'admin' }
+        });
+
+        // Log activity
+        await logActivity(req.user.id, req.user.name, 'bulk_delete_users', `Deleted ${result.deletedCount} users`, req.ip);
+
+        res.json({
+            success: true,
+            message: `${result.deletedCount} user(s) deleted successfully`,
+            data: { count: result.deletedCount }
+        });
+    } catch (error) {
+        console.error('Bulk delete error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting users',
+            error: error.message
+        });
+    }
+});
+
+// ==================== ANNOUNCEMENTS ====================
+
+// @route   GET /api/admin/announcements
+// @desc    Get all announcements
+// @access  Private/Admin
+router.get('/announcements', protect, adminOnly, async (req, res) => {
+    try {
+        const announcements = await Announcement.find()
+            .sort({ createdAt: -1 })
+            .populate('createdBy', 'name email');
+
+        res.json({
+            success: true,
+            data: announcements
+        });
+    } catch (error) {
+        console.error('Get announcements error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching announcements',
+            error: error.message
+        });
+    }
+});
+
+// @route   POST /api/admin/announcements
+// @desc    Create new announcement
+// @access  Private/Admin
+router.post('/announcements', protect, adminOnly, async (req, res) => {
+    try {
+        const { title, message, type, active } = req.body;
+
+        const announcement = await Announcement.create({
+            title,
+            message,
+            type,
+            active,
+            createdBy: req.user.id
+        });
+
+        await logActivity(req.user.id, req.user.name, 'create_announcement', `Created announcement: ${title}`, req.ip);
+
+        res.status(201).json({
+            success: true,
+            message: 'Announcement created successfully',
+            data: announcement
+        });
+    } catch (error) {
+        console.error('Create announcement error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating announcement',
+            error: error.message
+        });
+    }
+});
+
+// @route   PATCH /api/admin/announcements/:id
+// @desc    Update announcement status
+// @access  Private/Admin
+router.patch('/announcements/:id', protect, adminOnly, async (req, res) => {
+    try {
+        const { active } = req.body;
+
+        const announcement = await Announcement.findByIdAndUpdate(
+            req.params.id,
+            { active },
+            { new: true }
+        );
+
+        if (!announcement) {
+            return res.status(404).json({
+                success: false,
+                message: 'Announcement not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Announcement updated successfully',
+            data: announcement
+        });
+    } catch (error) {
+        console.error('Update announcement error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating announcement',
+            error: error.message
+        });
+    }
+});
+
+// @route   DELETE /api/admin/announcements/:id
+// @desc    Delete announcement
+// @access  Private/Admin
+router.delete('/announcements/:id', protect, adminOnly, async (req, res) => {
+    try {
+        const announcement = await Announcement.findByIdAndDelete(req.params.id);
+
+        if (!announcement) {
+            return res.status(404).json({
+                success: false,
+                message: 'Announcement not found'
+            });
+        }
+
+        await logActivity(req.user.id, req.user.name, 'delete_announcement', `Deleted announcement: ${announcement.title}`, req.ip);
+
+        res.json({
+            success: true,
+            message: 'Announcement deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete announcement error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting announcement',
+            error: error.message
+        });
+    }
+});
+
+// ==================== EXPORT ROUTES ====================
+
+// @route   GET /api/admin/export/dashboard
+// @desc    Export dashboard data
+// @access  Private/Admin
+router.get('/export/dashboard', protect, adminOnly, async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const totalMovies = await Movie.countDocuments();
+        const activeUsers = await User.countDocuments({ status: 'active' });
+        const bannedUsers = await User.countDocuments({ status: 'banned' });
+
+        const now = new Date();
+        const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        const newUsersLast7Days = await User.countDocuments({ createdAt: { $gte: last7Days } });
+        const newUsersLast30Days = await User.countDocuments({ createdAt: { $gte: last30Days } });
+
+        res.json({
+            success: true,
+            data: {
+                stats: {
+                    totalUsers,
+                    totalMovies,
+                    activeUsers,
+                    bannedUsers,
+                    newUsersLast7Days,
+                    newUsersLast30Days
+                },
+                exportedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Export dashboard error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error exporting dashboard data',
+            error: error.message
+        });
+    }
+});
+
+// @route   GET /api/admin/export/users
+// @desc    Export users data
+// @access  Private/Admin
+router.get('/export/users', protect, adminOnly, async (req, res) => {
+    try {
+        const users = await User.find()
+            .select('name email role status createdAt lastLogin')
+            .lean();
+
+        // Get movie count for each user
+        const usersWithMovieCount = await Promise.all(
+            users.map(async (user) => {
+                const movieCount = await Movie.countDocuments({ user: user._id });
+                return {
+                    ...user,
+                    movieCount
+                };
+            })
+        );
+
+        res.json({
+            success: true,
+            data: usersWithMovieCount
+        });
+    } catch (error) {
+        console.error('Export users error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error exporting users data',
+            error: error.message
+        });
+    }
+});
+
+// @route   GET /api/admin/export/activity
+// @desc    Export activity logs
+// @access  Private/Admin
+router.get('/export/activity', protect, adminOnly, async (req, res) => {
+    try {
+        const logs = await ActivityLog.find()
+            .sort({ timestamp: -1 })
+            .limit(1000)
+            .lean();
+
+        res.json({
+            success: true,
+            data: logs
+        });
+    } catch (error) {
+        console.error('Export activity error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error exporting activity logs',
             error: error.message
         });
     }

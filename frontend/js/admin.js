@@ -189,7 +189,7 @@ function renderUserGrowthChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
@@ -244,7 +244,7 @@ async function loadGenreChart() {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             position: 'right'
@@ -373,12 +373,21 @@ function renderUsersTable(users) {
     const tbody = document.getElementById('usersTableBody');
     
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="loading">No users found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="loading">No users found</td></tr>';
         return;
     }
     
     tbody.innerHTML = users.map(user => `
         <tr>
+            <td class="checkbox-cell">
+                <input 
+                    type="checkbox" 
+                    class="user-checkbox" 
+                    value="${user._id}"
+                    onchange="toggleUserSelection('${user._id}')"
+                    ${user.role === 'admin' ? 'disabled title="Cannot select admin users"' : ''}
+                />
+            </td>
             <td><strong>${user.name}</strong></td>
             <td>${user.email}</td>
             <td>
@@ -704,7 +713,7 @@ function renderUsersStatusChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true
+            maintainAspectRatio: false
         }
     });
 }
@@ -731,7 +740,7 @@ function renderContentTypeChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true
@@ -765,7 +774,7 @@ function renderTopGenresChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             indexAxis: 'y',
             scales: {
                 x: {
@@ -801,7 +810,7 @@ function renderDailyActiveChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true,
@@ -917,25 +926,44 @@ function showConfirmModal(title, message) {
     return new Promise((resolve) => {
         document.getElementById('confirmTitle').textContent = title;
         document.getElementById('confirmMessage').textContent = message;
-        document.getElementById('confirmModal').style.display = 'block';
+        const modal = document.getElementById('confirmModal');
+        modal.style.display = 'block';
         
         const confirmBtn = document.getElementById('confirmButton');
-        const newConfirmBtn = confirmBtn.cloneNode(true);
-        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        const cancelBtn = modal.querySelector('.btn-cancel');
         
+        // Clone buttons to remove old event listeners
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        
+        // Confirm button - resolve with true
         newConfirmBtn.onclick = () => {
-            closeConfirmModal();
+            modal.style.display = 'none';
             resolve(true);
         };
         
-        window.tempResolve = resolve;
+        // Cancel button - resolve with false
+        newCancelBtn.onclick = () => {
+            modal.style.display = 'none';
+            resolve(false);
+        };
+        
+        // Click outside to cancel
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                resolve(false);
+            }
+        };
     });
 }
 
 function closeConfirmModal() {
-    document.getElementById('confirmModal').style.display = 'none';
-    if (window.tempResolve) {
-        window.tempResolve(false);
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 }
 
@@ -951,3 +979,559 @@ window.onclick = function(event) {
         closeConfirmModal();
     }
 }
+
+// ==================== TOAST NOTIFICATIONS ====================
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    toast.innerHTML = `
+        <i class="fas ${icons[type]}"></i>
+        <div class="toast-message">${message}</div>
+        <button class="toast-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// ==================== DARK MODE ====================
+function toggleDarkMode() {
+    const body = document.body;
+    const isDark = body.classList.toggle('dark-mode');
+    localStorage.setItem('adminDarkMode', isDark);
+    
+    const icon = document.querySelector('.dark-mode-toggle i');
+    icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    
+    showToast(isDark ? 'Dark mode enabled' : 'Light mode enabled', 'info');
+}
+
+// Load dark mode preference (light mode is default)
+document.addEventListener('DOMContentLoaded', () => {
+    const darkMode = localStorage.getItem('adminDarkMode') === 'true';
+    if (darkMode) {
+        document.body.classList.add('dark-mode');
+        const icon = document.querySelector('.dark-mode-toggle i');
+        if (icon) icon.className = 'fas fa-sun';
+    } else {
+        // Ensure light mode icon is set
+        const icon = document.querySelector('.dark-mode-toggle i');
+        if (icon) icon.className = 'fas fa-moon';
+    }
+});
+
+// ==================== MOBILE NAVIGATION ====================
+function toggleMobileNav() {
+    const navMenu = document.getElementById('adminNavMenu');
+    const overlay = document.getElementById('navOverlay');
+    
+    navMenu.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// ==================== EXPORT FUNCTIONALITY ====================
+function toggleExportMenu(menuId) {
+    const menu = document.getElementById(menuId);
+    const allMenus = document.querySelectorAll('.export-menu');
+    
+    allMenus.forEach(m => {
+        if (m.id !== menuId) m.classList.remove('active');
+    });
+    
+    menu.classList.toggle('active');
+}
+
+// Close export menus when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.export-dropdown')) {
+        document.querySelectorAll('.export-menu').forEach(m => m.classList.remove('active'));
+    }
+});
+
+async function exportDashboard(format) {
+    try {
+        showToast('Generating export...', 'info');
+        
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/export/dashboard?format=${format}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Export failed');
+        
+        const data = await response.json();
+        
+        if (format === 'pdf') {
+            // Generate PDF using jsPDF
+            generatePDFReport(data.data, 'Dashboard_Report');
+        } else if (format === 'csv') {
+            downloadCSV(convertDashboardToCSV(data.data), 'dashboard_report.csv');
+        } else {
+            downloadJSON(data.data, 'dashboard_report.json');
+        }
+        
+        showToast('Export completed successfully!', 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Export failed. Please try again.', 'error');
+    }
+}
+
+async function exportUsers(format) {
+    try {
+        showToast('Exporting users...', 'info');
+        
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/export/users?format=${format}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Export failed');
+        
+        const data = await response.json();
+        
+        if (format === 'csv') {
+            downloadCSV(convertUsersToCSV(data.data), 'users_export.csv');
+        } else {
+            downloadJSON(data.data, 'users_export.json');
+        }
+        
+        showToast('Users exported successfully!', 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Export failed. Please try again.', 'error');
+    }
+}
+
+async function exportActivityLogs(format) {
+    try {
+        showToast('Exporting activity logs...', 'info');
+        
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/export/activity?format=${format}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Export failed');
+        
+        const data = await response.json();
+        
+        if (format === 'csv') {
+            downloadCSV(convertActivityToCSV(data.data), 'activity_logs.csv');
+        } else {
+            downloadJSON(data.data, 'activity_logs.json');
+        }
+        
+        showToast('Activity logs exported successfully!', 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Export failed. Please try again.', 'error');
+    }
+}
+
+// Helper functions for export
+function downloadCSV(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+}
+
+function downloadJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+}
+
+function convertDashboardToCSV(data) {
+    const stats = data.stats;
+    let csv = 'Metric,Value\n';
+    csv += `Total Users,${stats.totalUsers}\n`;
+    csv += `Total Movies,${stats.totalMovies}\n`;
+    csv += `Active Users,${stats.activeUsers}\n`;
+    csv += `Banned Users,${stats.bannedUsers}\n`;
+    csv += `New Users (Last 7 Days),${stats.newUsersLast7Days}\n`;
+    csv += `New Users (Last 30 Days),${stats.newUsersLast30Days}\n`;
+    return csv;
+}
+
+function convertUsersToCSV(users) {
+    let csv = 'Name,Email,Role,Status,Movie Count,Joined,Last Login\n';
+    users.forEach(user => {
+        csv += `"${user.name}","${user.email}","${user.role}","${user.status}",${user.movieCount},"${new Date(user.createdAt).toLocaleDateString()}","${new Date(user.lastLogin).toLocaleDateString()}"\n`;
+    });
+    return csv;
+}
+
+function convertActivityToCSV(logs) {
+    let csv = 'Time,User,Action,Details,IP Address\n';
+    logs.forEach(log => {
+        csv += `"${new Date(log.timestamp).toLocaleString()}","${log.userName}","${log.action}","${log.details}","${log.ipAddress}"\n`;
+    });
+    return csv;
+}
+
+function generatePDFReport(data, filename) {
+    // Simple text-based PDF generation
+    // For production, you'd want to use jsPDF library
+    const reportContent = `
+=================================
+${filename}
+Generated: ${new Date().toLocaleString()}
+=================================
+
+STATISTICS
+----------
+Total Users: ${data.stats.totalUsers}
+Total Movies: ${data.stats.totalMovies}
+Active Users: ${data.stats.activeUsers}
+Banned Users: ${data.stats.bannedUsers}
+New Users (7 days): ${data.stats.newUsersLast7Days}
+New Users (30 days): ${data.stats.newUsersLast30Days}
+
+=================================
+    `;
+    
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename + '.txt';
+    link.click();
+}
+
+// ==================== BULK USER ACTIONS ====================
+let selectedUsers = new Set();
+
+function toggleSelectAll() {
+    const checkbox = document.getElementById('selectAllUsers');
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    
+    userCheckboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (checkbox.checked) {
+            selectedUsers.add(cb.value);
+        } else {
+            selectedUsers.delete(cb.value);
+        }
+    });
+    
+    updateBulkActionBar();
+}
+
+function toggleUserSelection(userId) {
+    if (selectedUsers.has(userId)) {
+        selectedUsers.delete(userId);
+    } else {
+        selectedUsers.add(userId);
+    }
+    
+    updateBulkActionBar();
+}
+
+function updateBulkActionBar() {
+    const count = selectedUsers.size;
+    const bar = document.getElementById('bulkActionBar');
+    const countEl = document.getElementById('selectedCount');
+    
+    if (count > 0) {
+        bar.classList.add('active');
+        countEl.textContent = `${count} user${count > 1 ? 's' : ''} selected`;
+    } else {
+        bar.classList.remove('active');
+    }
+    
+    // Update select all checkbox state
+    const selectAll = document.getElementById('selectAllUsers');
+    const totalCheckboxes = document.querySelectorAll('.user-checkbox').length;
+    selectAll.checked = count === totalCheckboxes && count > 0;
+}
+
+async function bulkBanUsers() {
+    if (selectedUsers.size === 0) return;
+    
+    const confirmed = await showConfirmModal(
+        'Ban Users',
+        `Are you sure you want to ban ${selectedUsers.size} user(s)?`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/users/bulk-ban`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userIds: Array.from(selectedUsers) })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Successfully banned ${selectedUsers.size} user(s)`, 'success');
+            selectedUsers.clear();
+            loadUsers();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Bulk ban error:', error);
+        showToast('Failed to ban users. Please try again.', 'error');
+    }
+}
+
+async function bulkUnbanUsers() {
+    if (selectedUsers.size === 0) return;
+    
+    const confirmed = await showConfirmModal(
+        'Unban Users',
+        `Are you sure you want to unban ${selectedUsers.size} user(s)?`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/users/bulk-unban`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userIds: Array.from(selectedUsers) })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Successfully unbanned ${selectedUsers.size} user(s)`, 'success');
+            selectedUsers.clear();
+            loadUsers();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Bulk unban error:', error);
+        showToast('Failed to unban users. Please try again.', 'error');
+    }
+}
+
+async function bulkDeleteUsers() {
+    if (selectedUsers.size === 0) return;
+    
+    const confirmed = await showConfirmModal(
+        'Delete Users',
+        `WARNING: This will permanently delete ${selectedUsers.size} user(s) and all their data. This action cannot be undone!`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/users/bulk-delete`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userIds: Array.from(selectedUsers) })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Successfully deleted ${selectedUsers.size} user(s)`, 'success');
+            selectedUsers.clear();
+            loadUsers();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Bulk delete error:', error);
+        showToast('Failed to delete users. Please try again.', 'error');
+    }
+}
+
+// ==================== ANNOUNCEMENTS ====================
+async function createAnnouncement(event) {
+    event.preventDefault();
+    
+    const title = document.getElementById('announcementTitle').value;
+    const message = document.getElementById('announcementMessage').value;
+    const type = document.getElementById('announcementType').value;
+    const active = document.getElementById('announcementActive').checked;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/announcements`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title, message, type, active })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Announcement created successfully!', 'success');
+            document.getElementById('announcementForm').reset();
+            loadAnnouncements();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Create announcement error:', error);
+        showToast('Failed to create announcement. Please try again.', 'error');
+    }
+}
+
+async function loadAnnouncements() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/announcements`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayAnnouncements(result.data);
+        }
+    } catch (error) {
+        console.error('Load announcements error:', error);
+        document.getElementById('announcementsList').innerHTML = '<p class="loading">Failed to load announcements</p>';
+    }
+}
+
+function displayAnnouncements(announcements) {
+    const container = document.getElementById('announcementsList');
+    
+    if (!announcements || announcements.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #6b7280;">No announcements yet</p>';
+        return;
+    }
+    
+    container.innerHTML = announcements.map(announcement => `
+        <div class="announcement-item ${announcement.type}">
+            <div class="announcement-item-header">
+                <div>
+                    <div class="announcement-item-title">${announcement.title}</div>
+                    <div class="announcement-item-meta">
+                        ${new Date(announcement.createdAt).toLocaleString()} · 
+                        <span class="announcement-status ${announcement.active ? 'active' : 'inactive'}">
+                            ${announcement.active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="announcement-item-message">${announcement.message}</div>
+            <div class="announcement-item-actions">
+                <button onclick="toggleAnnouncementStatus('${announcement._id}', ${!announcement.active})">
+                    <i class="fas fa-${announcement.active ? 'eye-slash' : 'eye'}"></i>
+                    ${announcement.active ? 'Deactivate' : 'Activate'}
+                </button>
+                <button class="btn-delete" onclick="deleteAnnouncement('${announcement._id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function toggleAnnouncementStatus(id, active) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/announcements/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ active })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Announcement ${active ? 'activated' : 'deactivated'}`, 'success');
+            loadAnnouncements();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Toggle announcement error:', error);
+        showToast('Failed to update announcement. Please try again.', 'error');
+    }
+}
+
+async function deleteAnnouncement(id) {
+    console.log('Delete announcement called with ID:', id);
+    
+    const confirmed = await showConfirmModal(
+        'Delete Announcement',
+        'Are you sure you want to delete this announcement? This action cannot be undone.'
+    );
+    
+    console.log('User confirmation:', confirmed);
+    
+    if (!confirmed) return;
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/admin/announcements/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Announcement deleted successfully', 'success');
+            loadAnnouncements();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Delete announcement error:', error);
+        showToast('Failed to delete announcement. Please try again.', 'error');
+    }
+}
+
+// Make functions globally accessible
+window.toggleAnnouncementStatus = toggleAnnouncementStatus;
+window.deleteAnnouncement = deleteAnnouncement;
+window.showConfirmModal = showConfirmModal;
+window.closeConfirmModal = closeConfirmModal;
+
+// Update switchSection to handle announcements
+const originalSwitchSection = switchSection;
+switchSection = function(section) {
+    originalSwitchSection(section);
+    if (section === 'announcements') {
+        loadAnnouncements();
+    }
+};
+

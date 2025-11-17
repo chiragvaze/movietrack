@@ -29,6 +29,70 @@
                 <li><a href="categories.html"><i class="fas fa-layer-group"></i> Categories</a></li>
                 <li><a href="#" id="viewModeBtn" class="view-mode-btn" title="Change View Mode"><i class="fas fa-th"></i></a></li>
                 <li><a href="#" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Theme"><i class="fas fa-moon"></i></a></li>
+                
+                <!-- Notification Bell -->
+                <li class="notification-bell-container">
+                    <a href="#" id="notificationBellBtn" class="notification-bell-btn" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </a>
+                    
+                    <!-- Notification Dropdown -->
+                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                        <div class="notification-header">
+                            <h3><i class="fas fa-bell"></i> Notifications</h3>
+                            <button class="close-notification-btn" id="closeNotificationBtn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Filter Tabs -->
+                        <div class="notification-filters">
+                            <button class="filter-btn active" data-filter="all">
+                                <i class="fas fa-inbox"></i> All
+                            </button>
+                            <button class="filter-btn" data-filter="info">
+                                <i class="fas fa-info-circle"></i> Info
+                            </button>
+                            <button class="filter-btn" data-filter="success">
+                                <i class="fas fa-check-circle"></i> Success
+                            </button>
+                            <button class="filter-btn" data-filter="warning">
+                                <i class="fas fa-exclamation-triangle"></i> Warning
+                            </button>
+                            <button class="filter-btn" data-filter="error">
+                                <i class="fas fa-times-circle"></i> Critical
+                            </button>
+                        </div>
+                        
+                        <!-- Mute Toggle -->
+                        <div class="notification-mute">
+                            <label class="mute-toggle">
+                                <input type="checkbox" id="muteNotifications">
+                                <span class="mute-slider"></span>
+                                <span class="mute-label">
+                                    <i class="fas fa-bell-slash"></i> Mute for 24 hours
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <!-- Notification List -->
+                        <div class="notification-list" id="notificationList">
+                            <div class="notification-empty">
+                                <i class="fas fa-bell"></i>
+                                <p>No notifications</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer Actions -->
+                        <div class="notification-footer">
+                            <button class="mark-all-read-btn" id="markAllReadBtn">
+                                <i class="fas fa-check-double"></i> Mark All as Read
+                            </button>
+                        </div>
+                    </div>
+                </li>
+                
                 <li><a href="#" id="profileBtn" class="profile-icon"><i class="fas fa-user-circle"></i></a></li>
                 <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
@@ -231,6 +295,9 @@
                 <h2><i class="fas fa-th-large"></i> My Dashboard</h2>
                 <p>Welcome back, <strong id="userName">User</strong>! 🎬</p>
             </div>
+
+            <!-- Announcements Container -->
+            <div id="announcementsContainer"></div>
 
             <!-- Stats Cards -->
             <div class="stats-grid">

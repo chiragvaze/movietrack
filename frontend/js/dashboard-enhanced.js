@@ -2342,9 +2342,142 @@ window.showSidebarMovieDetails = async function(tmdbId, mediaType) {
     }
 }
 
+// Load and display announcements
+async function loadAnnouncements() {
+    try {
+        const token = localStorage.getItem('token');
+        
+        // Check mute preferences first
+        if (token) {
+            const prefsResponse = await fetch(`${API_URL}/api/auth/notification-preferences`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const prefsData = await prefsResponse.json();
+            if (prefsData.success) {
+                const muteUntil = prefsData.preferences?.muteUntil;
+                if (muteUntil && new Date(muteUntil) > new Date()) {
+                    // Notifications are muted
+                    return;
+                }
+            }
+        }
+        
+        const response = await fetch(`${API_URL}/api/auth/announcements`);
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            // Filter out announcements the user has already seen and dismissed
+            const seenAnnouncements = JSON.parse(localStorage.getItem('seenAnnouncements') || '[]');
+            const unseenAnnouncements = result.data.filter(a => !seenAnnouncements.includes(a._id));
+            
+            // Display all unseen announcements (or at least the first one)
+            if (unseenAnnouncements.length > 0) {
+                unseenAnnouncements.slice(0, 3).forEach(announcement => {
+                    displayAnnouncementBanner(announcement);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error loading announcements:', error);
+    }
+}
+
+function displayAnnouncementBanner(announcement) {
+    const container = document.getElementById('announcementsContainer');
+    if (!container) {
+        console.warn('Announcements container not found');
+        return;
+    }
+    
+    const typeIcons = {
+        info: 'fa-info-circle',
+        success: 'fa-check-circle',
+        warning: 'fa-exclamation-triangle',
+        error: 'fa-exclamation-circle'
+    };
+    
+    const banner = document.createElement('div');
+    banner.className = `announcement-banner-user ${announcement.type}`;
+    banner.setAttribute('data-announcement-id', announcement._id);
+    
+    const createdDate = new Date(announcement.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    
+    banner.innerHTML = `
+        <i class="fas ${typeIcons[announcement.type] || typeIcons.info}"></i>
+        <div class="announcement-content">
+            <div class="announcement-title">
+                ${announcement.title}
+            </div>
+            <div class="announcement-message">${announcement.message}</div>
+            <div class="announcement-meta">
+                <i class="fas fa-calendar"></i> ${createdDate}
+            </div>
+        </div>
+        <button class="announcement-close" onclick="dismissAnnouncement('${announcement._id}', this)" title="Dismiss">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(banner);
+    
+    // Mark as read if user is logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+        markAnnouncementAsRead(announcement._id);
+    }
+}
+
+// Function to mark announcement as read
+async function markAnnouncementAsRead(announcementId) {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        await fetch(`${API_URL}/api/auth/announcements/${announcementId}/mark-read`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    } catch (error) {
+        console.error('Error marking announcement as read:', error);
+    }
+}
+
+// Function to dismiss announcement
+function dismissAnnouncement(announcementId, buttonElement) {
+    // Remove the banner from UI
+    const banner = buttonElement.closest('.announcement-banner-user');
+    if (banner) {
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(-20px)';
+        setTimeout(() => banner.remove(), 300);
+    }
+    
+    // Store that user has seen/dismissed this announcement
+    const seenAnnouncements = JSON.parse(localStorage.getItem('seenAnnouncements') || '[]');
+    if (!seenAnnouncements.includes(announcementId)) {
+        seenAnnouncements.push(announcementId);
+        localStorage.setItem('seenAnnouncements', JSON.stringify(seenAnnouncements));
+    }
+}
+
+// Make dismissAnnouncement globally accessible
+window.dismissAnnouncement = dismissAnnouncement;
+
 // Initialize
 loadUserSettings(); // Load user settings first
 loadMovies();
+loadAnnouncements(); // Load announcements
 initSearch();
 initTMDBSearch();
 initThemeToggle();
@@ -3499,4 +3632,384 @@ async function submitAddToLists(movieId) {
         showToast('Error adding to lists', 'error');
     }
 }
+
+
+// ============================================
+// NOTIFICATION CENTER FUNCTIONALITY
+// ============================================
+
+let allNotifications = [];
+let currentNotificationFilter = 'all';
+
+/**
+ * Initialize notification center
+ */
+async function initNotificationCenter() {
+    const bellBtn = document.getElementById('notificationBellBtn');
+    const dropdown = document.getElementById('notificationDropdown');
+    const closeBtn = document.getElementById('closeNotificationBtn');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const muteCheckbox = document.getElementById('muteNotifications');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    
+    if (!bellBtn) return;
+    
+    // Load initial data
+    await loadNotifications();
+    await updateUnreadCount();
+    await loadMutePreferences();
+    
+    // Toggle dropdown
+    bellBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isVisible = dropdown.style.display === 'block';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+        
+        if (!isVisible) {
+            loadNotifications();
+        }
+    });
+    
+    // Close dropdown
+    closeBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        dropdown.style.display = 'none';
+    });
+    
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.notification-bell-container')) {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // Filter buttons
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentNotificationFilter = btn.dataset.filter;
+            renderNotifications();
+        });
+    });
+    
+    // Mute toggle
+    muteCheckbox?.addEventListener('change', async (e) => {
+        const muteUntil = e.target.checked ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
+        await updateMutePreferences(muteUntil);
+    });
+    
+    // Mark all as read
+    markAllReadBtn?.addEventListener('click', async () => {
+        await markAllNotificationsRead();
+    });
+}
+
+/**
+ * Load all notifications
+ */
+async function loadNotifications() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/auth/announcements`, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            allNotifications = data.data.map(announcement => {
+                const userId = getUserIdFromToken();
+                const isRead = announcement.viewedBy?.some(v => v.user === userId);
+                return {
+                    ...announcement,
+                    isRead
+                };
+            });
+            
+            renderNotifications();
+            updateUnreadCount();
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+/**
+ * Get user ID from token
+ */
+function getUserIdFromToken() {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.id;
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Render notifications based on current filter
+ */
+function renderNotifications() {
+    const listContainer = document.getElementById('notificationList');
+    if (!listContainer) return;
+    
+    // Filter notifications
+    let filteredNotifications = allNotifications;
+    if (currentNotificationFilter !== 'all') {
+        filteredNotifications = allNotifications.filter(n => n.type === currentNotificationFilter);
+    }
+    
+    // Clear container
+    listContainer.innerHTML = '';
+    
+    // Show empty state
+    if (filteredNotifications.length === 0) {
+        listContainer.innerHTML = `
+            <div class="notification-empty">
+                <i class="fas fa-bell"></i>
+                <p>No ${currentNotificationFilter !== 'all' ? currentNotificationFilter : ''} notifications</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Render each notification
+    filteredNotifications.forEach(notification => {
+        const item = createNotificationItem(notification);
+        listContainer.appendChild(item);
+    });
+}
+
+/**
+ * Create notification item element
+ */
+function createNotificationItem(notification) {
+    const div = document.createElement('div');
+    div.className = `notification-item ${!notification.isRead ? 'unread' : ''}`;
+    div.dataset.type = notification.type;
+    div.dataset.id = notification._id;
+    
+    const iconMap = {
+        info: 'fa-info-circle',
+        success: 'fa-check-circle',
+        warning: 'fa-exclamation-triangle',
+        error: 'fa-times-circle'
+    };
+    
+    const date = new Date(notification.createdAt);
+    const timeAgo = getTimeAgo(date);
+    
+    div.innerHTML = `
+        <div class="notification-item-header">
+            <div class="notification-icon">
+                <i class="fas ${iconMap[notification.type]}"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">${notification.title}</div>
+                <div class="notification-message">${notification.message}</div>
+                <div class="notification-meta">
+                    <span class="notification-date">
+                        <i class="fas fa-clock"></i>
+                        ${timeAgo}
+                    </span>
+                    <span class="notification-type-badge ${notification.type}">
+                        ${notification.type}
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Mark as read on click
+    div.addEventListener('click', async () => {
+        if (!notification.isRead) {
+            await markNotificationAsRead(notification._id);
+            notification.isRead = true;
+            div.classList.remove('unread');
+            updateUnreadCount();
+        }
+    });
+    
+    return div;
+}
+
+/**
+ * Get time ago string
+ */
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+    };
+    
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
+        if (interval >= 1) {
+            return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
+        }
+    }
+    
+    return 'Just now';
+}
+
+/**
+ * Update unread count badge
+ */
+async function updateUnreadCount() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch(`${API_URL}/api/auth/announcements/unread`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        const badge = document.getElementById('notificationBadge');
+        if (badge && data.success) {
+            const count = data.count || 0;
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+    } catch (error) {
+        console.error('Error updating unread count:', error);
+    }
+}
+
+/**
+ * Mark notification as read
+ */
+async function markNotificationAsRead(notificationId) {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        await fetch(`${API_URL}/api/auth/announcements/${notificationId}/mark-read`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    } catch (error) {
+        console.error('Error marking as read:', error);
+    }
+}
+
+/**
+ * Mark all notifications as read
+ */
+async function markAllNotificationsRead() {
+    const unreadNotifications = allNotifications.filter(n => !n.isRead);
+    
+    if (unreadNotifications.length === 0) {
+        showToast('No unread notifications', 'info');
+        return;
+    }
+    
+    try {
+        // Mark each as read
+        for (const notification of unreadNotifications) {
+            await markNotificationAsRead(notification._id);
+            notification.isRead = true;
+        }
+        
+        renderNotifications();
+        updateUnreadCount();
+        showToast('All notifications marked as read', 'success');
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+        showToast('Error marking notifications as read', 'error');
+    }
+}
+
+/**
+ * Load mute preferences
+ */
+async function loadMutePreferences() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch(`${API_URL}/api/auth/notification-preferences`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const muteCheckbox = document.getElementById('muteNotifications');
+            const muteUntil = data.preferences?.muteUntil;
+            
+            if (muteCheckbox && muteUntil) {
+                const isMuted = new Date(muteUntil) > new Date();
+                muteCheckbox.checked = isMuted;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading mute preferences:', error);
+    }
+}
+
+/**
+ * Update mute preferences
+ */
+async function updateMutePreferences(muteUntil) {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch(`${API_URL}/api/auth/notification-preferences`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ muteUntil })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const message = muteUntil 
+                ? 'Notifications muted for 24 hours' 
+                : 'Notifications unmuted';
+            showToast(message, 'success');
+            updateUnreadCount();
+        }
+    } catch (error) {
+        console.error('Error updating mute preferences:', error);
+        showToast('Error updating preferences', 'error');
+    }
+}
+
+// Initialize notification center when DOM loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNotificationCenter);
+} else {
+    initNotificationCenter();
+}
+
+// Update unread count periodically (every 2 minutes)
+setInterval(updateUnreadCount, 120000);
 
